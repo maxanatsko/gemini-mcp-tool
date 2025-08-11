@@ -326,14 +326,7 @@ gemini config set api_key YOUR_API_KEY
 
 ### Test Basic Functionality
 ```bash
-# Test Gemini CLI
-gemini "Hello"
-
-# Test MCP Tool with Flash model
-/gemini-cli:ping
-
-# Test file analysis with working model
-/gemini-cli:analyze -m gemini-2.5-flash @README.md summarize
+gemini
 ```
 
 ## Platform-Specific Issues
