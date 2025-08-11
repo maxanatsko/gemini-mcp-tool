@@ -1,4 +1,5 @@
-import { spawn } from "child_process";
+import { ChildProcessByStdio, spawn } from "child_process";
+import { Readable, Writable } from "stream";
 import { Logger } from "./logger.js";
 
 export async function executeCommand(
@@ -11,24 +12,32 @@ export async function executeCommand(
     const startTime = Date.now();
     Logger.commandExecution(command, args, startTime);
 
-    const childProcess = spawn(command, args, {
-      env: process.env,
-      shell: true,
-      stdio: stdinData ? ["pipe", "pipe", "pipe"] : ["ignore", "pipe", "pipe"],
-    });
-
+    let childProcess: ChildProcessByStdio<Writable | null, Readable, Readable>;
     let stdout = "";
     let stderr = "";
     let isResolved = false;
     let lastReportedLength = 0;
-    
-    // Write stdin data if provided
-    if (stdinData && childProcess.stdin) {
-      childProcess.stdin.write(stdinData);
-      childProcess.stdin.end();
+
+    if (stdinData) {
+      childProcess = spawn(command, args, {
+        env: process.env,
+        shell: true,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }) as ChildProcessByStdio<Writable, Readable, Readable>;
+
+      if (childProcess.stdin) {
+        childProcess.stdin.write(stdinData);
+        childProcess.stdin.end();
+      }
+    } else {
+      childProcess = spawn(command, args, {
+        env: process.env,
+        shell: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }) as ChildProcessByStdio<null, Readable, Readable>;
     }
-    
-    childProcess.stdout?.on("data", (data) => {
+
+    childProcess.stdout.on("data", (data: Buffer) => {
       stdout += data.toString();
       
       // Report new content if callback provided
@@ -39,9 +48,8 @@ export async function executeCommand(
       }
     });
 
-
     // CLI level errors
-    childProcess.stderr?.on("data", (data) => {
+    childProcess.stderr.on("data", (data: Buffer) => {
       stderr += data.toString();
       // find RESOURCE_EXHAUSTED when gemini-2.5-pro quota is exceeded
       if (stderr.includes("RESOURCE_EXHAUSTED")) {
@@ -65,14 +73,14 @@ export async function executeCommand(
         Logger.error(`Gemini Quota Error: ${JSON.stringify(errorJson, null, 2)}`);
       }
     });
-    childProcess.on("error", (error) => {
+    childProcess.on("error", (error: Error) => {
       if (!isResolved) {
         isResolved = true;
         Logger.error(`Process error:`, error);
         reject(new Error(`Failed to spawn command: ${error.message}`));
       }
     });
-    childProcess.on("close", (code) => {
+    childProcess.on("close", (code: number | null) => {
       if (!isResolved) {
         isResolved = true;
         if (code === 0) {

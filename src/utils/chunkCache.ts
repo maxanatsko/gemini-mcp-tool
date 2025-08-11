@@ -33,7 +33,7 @@ export function cacheChunks(prompt: string, chunks: EditChunk[]): string {
   
   // Generate deterministic cache key from prompt
   const promptHash = createHash('sha256').update(prompt).digest('hex');
-  const cacheKey = promptHash.slice(0, 8);
+  const cacheKey = promptHash.slice(0, 12); // Longer slice to reduce collision risk
   const filePath = path.join(CACHE_DIR, `${cacheKey}.json`);
   
   // Store with metadata
@@ -98,19 +98,25 @@ function cleanExpiredFiles(): void {
       
       const filePath = path.join(CACHE_DIR, file);
       try {
-        const stats = fs.statSync(filePath);
-        if (now - stats.mtimeMs > CACHE_TTL) {
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const data: CacheEntry = JSON.parse(fileContent);
+        
+        if (now - data.timestamp > CACHE_TTL) {
           fs.unlinkSync(filePath);
           cleaned++;
         }
       } catch (error) {
-        // Individual file error - continue with others
-        Logger.debug(`Error checking file ${file}: ${error}`);
+        // Individual file error - clean up bad file
+        Logger.debug(`Error processing file ${file}: ${error}`);
+        try {
+          fs.unlinkSync(filePath);
+          cleaned++;
+        } catch {}
       }
     }
     
     if (cleaned > 0) {
-      Logger.debug(`Cleaned ${cleaned} expired cache files`);
+      Logger.debug(`Cleaned ${cleaned} expired/invalid cache files`);
     }
   } catch (error) {
     // Non-critical, just log
@@ -125,12 +131,26 @@ function enforceFileLimits(): void {
   try {
     const files = fs.readdirSync(CACHE_DIR)
       .filter(f => f.endsWith('.json'))
-      .map(f => ({
-        name: f,
-        path: path.join(CACHE_DIR, f),
-        mtime: fs.statSync(path.join(CACHE_DIR, f)).mtimeMs
-      }))
-      .sort((a, b) => a.mtime - b.mtime); // Oldest first
+      .map(f => {
+        const filePath = path.join(CACHE_DIR, f);
+        try {
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          const data: CacheEntry = JSON.parse(fileContent);
+          return {
+            name: f,
+            path: filePath,
+            timestamp: data.timestamp
+          };
+        } catch {
+          // Invalid file - remove immediately
+          try {
+            fs.unlinkSync(filePath);
+          } catch {}
+          return null;
+        }
+      })
+      .filter((entry): entry is { name: string; path: string; timestamp: number } => entry !== null)
+      .sort((a, b) => a.timestamp - b.timestamp); // Oldest first
     
     // Remove oldest files if over limit
     if (files.length > MAX_CACHE_FILES) {
