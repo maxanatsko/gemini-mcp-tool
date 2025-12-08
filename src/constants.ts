@@ -79,6 +79,59 @@ export const CLI = {
   },
 } as const;
 
+// Code Review Constants
+export const REVIEW = {
+  // Session configuration
+  SESSION: {
+    TTL: 60 * 60 * 1000, // 60 minutes
+    MAX_SESSIONS: 20,
+    CACHE_DIR_NAME: 'gemini-mcp-review-sessions',
+  },
+  // Review types
+  TYPES: {
+    SECURITY: 'security',
+    PERFORMANCE: 'performance',
+    QUALITY: 'quality',
+    ARCHITECTURE: 'architecture',
+    GENERAL: 'general',
+  },
+  // Comment severity levels
+  SEVERITY: {
+    CRITICAL: 'critical',
+    IMPORTANT: 'important',
+    SUGGESTION: 'suggestion',
+    QUESTION: 'question',
+  },
+  // Comment status
+  STATUS: {
+    PENDING: 'pending',
+    ACCEPTED: 'accepted',
+    REJECTED: 'rejected',
+    MODIFIED: 'modified',
+    DEFERRED: 'deferred',
+  },
+  // Session state
+  SESSION_STATE: {
+    ACTIVE: 'active',
+    PAUSED: 'paused',
+    COMPLETED: 'completed',
+  },
+  // Review scope
+  SCOPE: {
+    FULL: 'full',
+    CHANGES_ONLY: 'changes-only',
+    FOCUSED: 'focused',
+  },
+  // Formatting
+  MAX_HISTORY_ROUNDS: 3, // How many previous rounds to include in context
+  SEVERITY_EMOJI: {
+    critical: '🔴',
+    important: '🟠',
+    suggestion: '🟡',
+    question: '💬',
+  } as const,
+} as const;
+
 
 // (merged PromptArguments and ToolArguments)
 export interface ToolArguments {
@@ -89,14 +142,27 @@ export interface ToolArguments {
   chunkIndex?: number | string; // Which chunk to return (1-based)
   chunkCacheKey?: string; // Optional cache key for continuation
   message?: string; // For Ping tool -- Un-used.
-  
-  // --> new tool
+
+  // --> brainstorm tool
   methodology?: string; // Brainstorming framework to use
   domain?: string; // Domain context for specialized brainstorming
   constraints?: string; // Known limitations or requirements
   existingContext?: string; // Background information to build upon
   ideaCount?: number; // Target number of ideas to generate
   includeAnalysis?: boolean; // Include feasibility and impact analysis
-  
-  [key: string]: string | boolean | number | undefined; // Allow additional properties
+
+  // --> review-code tool
+  files?: string[]; // Specific files to review
+  sessionId?: string; // Explicit session ID override
+  forceNewSession?: boolean; // Force create new session
+  reviewType?: string; // Type of review (security, performance, etc.)
+  severity?: string; // Filter by severity level
+  commentDecisions?: Array<{
+    commentId: string;
+    decision: string;
+    notes?: string;
+  }>; // Decision tracking for previous comments
+  includeHistory?: boolean; // Include conversation history in prompt
+
+  [key: string]: string | boolean | number | undefined | string[] | Array<any>; // Allow additional properties
 }
