@@ -1,21 +1,38 @@
 # Changelog
 
-## [Unreleased]
+## [2.1.0]
+
+- Add `allowedTools` parameter for auto-approval in CLI commands
+- Add comprehensive tests for shared session infrastructure
+- Update package namespace
+
+## [2.0.0]
+
+- Complete async refactor for all session management
+- Shared session infrastructure across tools
+- Add `review-code` tool with session management and comment tracking
+- Add `brainstorm` tool for creative ideation
+- 100% async I/O with `fs/promises`
+- Robust error handling
+- LRU session eviction policy
+- Full type safety
+
+**Breaking**: SessionManager methods are now async
 
 ## [1.1.3]
-- "gemini reads, claude edits"
-- Added `changeMode` parameter to ask-gemini tool for structured edit responses using claude edit diff.
-- Testing intelligent parsing and chunking for large edit responses (>25k characters). I recommend you provide a focused prompt, although large (2000+) line edits have had success in testing.
-- Added structured response format with Analysis, Suggested Changes, and Next Steps sections
-- Improved guidance for applying edits using Claude's Edit/MultiEdit tools, avoids reading...
-- Testing token limit handling with continuation support for large responses
+
+- Add `changeMode` parameter for structured edit responses
+- Intelligent parsing and chunking for large edit responses
+- Structured response format with Analysis, Suggested Changes, Next Steps
+- Token limit handling with continuation support
 
 ## [1.1.2]
-- Gemini-2.5-pro quota limit exceeded now falls back to gemini-2.5-flash automatically. Unless you ask for pro or flash, it will default to pro.
+
+- Auto-fallback from gemini-2.5-pro to gemini-2.5-flash on quota limit
 
 ## [1.1.1]
 
-- Public
+- Initial public release
 - Basic Gemini CLI integration
-- Support for file analysis with @ syntax
+- File analysis with `@` syntax
 - Sandbox mode support
