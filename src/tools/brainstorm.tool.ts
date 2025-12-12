@@ -128,6 +128,7 @@ const brainstormArgsSchema = z.object({
   includeAnalysis: z.boolean().default(true).describe("Include feasibility, impact, and implementation analysis for generated ideas"),
   includeHistory: z.boolean().default(true).describe("Include previously generated ideas in context (only applies when session is provided). Default: true"),
   allowedTools: z.array(z.string()).optional().describe("Tools that Gemini can auto-approve without confirmation (e.g., ['run_shell_command']). Use sparingly for security."),
+  cwd: z.string().optional().describe("Working directory for Gemini CLI execution. Use this to match your IDE workspace directory if you get 'Directory mismatch' errors."),
 });
 
 export const brainstormTool: UnifiedTool = {
@@ -150,7 +151,8 @@ export const brainstormTool: UnifiedTool = {
       ideaCount = 12,
       includeAnalysis = true,
       includeHistory = true,
-      allowedTools
+      allowedTools,
+      cwd
     } = args;
 
     if (!prompt?.trim()) {
@@ -203,7 +205,7 @@ export const brainstormTool: UnifiedTool = {
     onProgress?.(`Generating ${ideaCount} ideas via ${methodology} methodology...`);
 
     // Execute with Gemini
-    const result = await executeGeminiCLI(enhancedPrompt, model as string | undefined, false, false, onProgress, allowedTools as string[] | undefined);
+    const result = await executeGeminiCLI(enhancedPrompt, model as string | undefined, false, false, onProgress, allowedTools as string[] | undefined, cwd as string | undefined);
 
     // Save to session if provided
     if (session && sessionData) {

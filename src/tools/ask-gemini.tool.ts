@@ -20,6 +20,7 @@ const askGeminiArgsSchema = z.object({
   allowedTools: z.array(z.string()).optional().describe("Tools that Gemini can auto-approve without confirmation (e.g., ['run_shell_command'] for git commands). Use sparingly for security."),
   chunkIndex: z.union([z.number(), z.string()]).optional().describe("Which chunk to return (1-based)"),
   chunkCacheKey: z.string().optional().describe("Optional cache key for continuation"),
+  cwd: z.string().optional().describe("Working directory for Gemini CLI execution. Use this to match your IDE workspace directory if you get 'Directory mismatch' errors."),
 });
 
 export const askGeminiTool: UnifiedTool = {
@@ -31,7 +32,7 @@ export const askGeminiTool: UnifiedTool = {
   },
   category: 'gemini',
   execute: async (args, onProgress) => {
-    const { prompt, session, model, sandbox, changeMode, includeHistory, allowedTools, chunkIndex, chunkCacheKey } = args;
+    const { prompt, session, model, sandbox, changeMode, includeHistory, allowedTools, chunkIndex, chunkCacheKey, cwd } = args;
 
     if (!prompt?.trim()) {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
@@ -75,7 +76,8 @@ export const askGeminiTool: UnifiedTool = {
       !!sandbox,
       !!changeMode,
       onProgress,
-      allowedTools as string[] | undefined
+      allowedTools as string[] | undefined,
+      cwd as string | undefined
     );
 
     // Save to session if provided

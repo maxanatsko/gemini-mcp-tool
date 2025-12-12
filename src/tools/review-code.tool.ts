@@ -68,7 +68,11 @@ const reviewCodeArgsSchema = z.object({
   allowedTools: z
     .array(z.string())
     .optional()
-    .describe('Tools that Gemini can auto-approve without confirmation (e.g., [\'run_shell_command\']). Use sparingly for security.')
+    .describe('Tools that Gemini can auto-approve without confirmation (e.g., [\'run_shell_command\']). Use sparingly for security.'),
+  cwd: z
+    .string()
+    .optional()
+    .describe('Working directory for Gemini CLI execution. Use this to match your IDE workspace directory if you get \'Directory mismatch\' errors.')
 });
 
 export const reviewCodeTool: UnifiedTool = {
@@ -89,7 +93,8 @@ export const reviewCodeTool: UnifiedTool = {
       commentDecisions,
       model,
       includeHistory,
-      allowedTools
+      allowedTools,
+      cwd
     } = args;
 
     try {
@@ -177,7 +182,8 @@ export const reviewCodeTool: UnifiedTool = {
         false, // sandbox
         false, // changeMode - we parse manually
         onProgress,
-        allowedTools as string[] | undefined
+        allowedTools as string[] | undefined,
+        cwd as string | undefined
       );
 
       // Step 7: Parse response into structured comments
