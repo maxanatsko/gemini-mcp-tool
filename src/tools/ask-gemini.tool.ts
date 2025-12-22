@@ -18,8 +18,6 @@ const askGeminiArgsSchema = z.object({
   changeMode: z.boolean().default(false).describe("Enable structured change mode - formats prompts to prevent tool errors and returns structured edit suggestions that Claude can apply directly"),
   includeHistory: z.boolean().default(true).describe("Include conversation history in context (only applies when session is provided). Default: true"),
   allowedTools: z.array(z.string()).optional().describe("Tools that Gemini can auto-approve without confirmation (e.g., ['run_shell_command'] for git commands). Use sparingly for security."),
-  chunkIndex: z.union([z.number(), z.string()]).optional().describe("Which chunk to return (1-based)"),
-  chunkCacheKey: z.string().optional().describe("Optional cache key for continuation"),
   cwd: z.string().optional().describe("Working directory for Gemini CLI execution. Use this to match your IDE workspace directory if you get 'Directory mismatch' errors."),
 });
 
@@ -32,20 +30,10 @@ export const askGeminiTool: UnifiedTool = {
   },
   category: 'gemini',
   execute: async (args, onProgress) => {
-    const { prompt, session, model, sandbox, changeMode, includeHistory, allowedTools, chunkIndex, chunkCacheKey, cwd } = args;
+    const { prompt, session, model, sandbox, changeMode, includeHistory, allowedTools, cwd } = args;
 
     if (!prompt?.trim()) {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
-    }
-
-    // Handle chunking (existing logic)
-    if (changeMode && chunkIndex && chunkCacheKey) {
-      return processChangeModeOutput(
-        '',
-        chunkIndex as number,
-        chunkCacheKey as string,
-        prompt as string
-      );
     }
 
     // Session handling
@@ -101,12 +89,7 @@ export const askGeminiTool: UnifiedTool = {
     }
 
     if (changeMode) {
-      return processChangeModeOutput(
-        result,
-        args.chunkIndex as number | undefined,
-        undefined,
-        prompt as string
-      );
+      return processChangeModeOutput(result);
     }
 
     return `${STATUS_MESSAGES.GEMINI_RESPONSE}\n${result}`;
