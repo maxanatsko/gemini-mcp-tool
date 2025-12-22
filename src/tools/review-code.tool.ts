@@ -102,7 +102,12 @@ export const reviewCodeTool: UnifiedTool = {
       onProgress?.('🔍 Detecting git state and session...');
       const currentGitState = await getCurrentGitState();
       const detectedSessionId = generateSessionId(currentGitState);
-      const targetSessionId = sessionId || detectedSessionId;
+
+      // If user provides a session ID, incorporate git state to prevent cross-task context bleeding
+      // e.g., "iterative-review" becomes "iterative-review-main-abc12345"
+      const targetSessionId = sessionId
+        ? `${sessionId}-${currentGitState.branch.replace(/[^a-zA-Z0-9-_]/g, '-')}-${currentGitState.commitHash.slice(0, 8)}`
+        : detectedSessionId;
 
       Logger.debug(`Current git state: ${currentGitState.branch} @ ${currentGitState.commitHash.slice(0, 8)}`);
       Logger.debug(`Target session ID: ${targetSessionId}`);
