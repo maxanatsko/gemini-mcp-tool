@@ -60,7 +60,7 @@ const reviewCodeArgsSchema = z.object({
     )
     .optional()
     .describe('Responses to previous round\'s comments'),
-  model: z.string().optional().describe("Optional model: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro', 'gemini-2.5-flash'"),
+  model: z.string().optional().describe("Optional model: 'gemini-3-pro-preview' (default), 'gemini-3-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'"),
   includeHistory: z
     .boolean()
     .default(true)

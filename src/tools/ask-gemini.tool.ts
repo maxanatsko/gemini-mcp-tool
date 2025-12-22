@@ -13,7 +13,7 @@ import { Logger } from '../utils/logger.js';
 const askGeminiArgsSchema = z.object({
   prompt: z.string().min(1).describe("Analysis request. Use @ syntax to include files (e.g., '@largefile.js explain what this does') or ask general questions"),
   session: z.string().optional().describe("Session ID for conversation continuity (e.g., 'typescript-learning'). Maintains context across multiple questions."),
-  model: z.string().optional().describe("Optional model: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro', 'gemini-2.5-flash'"),
+  model: z.string().optional().describe("Optional model: 'gemini-3-pro-preview' (default), 'gemini-3-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'"),
   sandbox: z.boolean().default(false).describe("Use sandbox mode (-s flag) to safely test code changes, execute scripts, or run potentially risky operations in an isolated environment"),
   changeMode: z.boolean().default(false).describe("Enable structured change mode - formats prompts to prevent tool errors and returns structured edit suggestions that Claude can apply directly"),
   includeHistory: z.boolean().default(true).describe("Include conversation history in context (only applies when session is provided). Default: true"),
