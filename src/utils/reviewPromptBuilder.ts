@@ -12,7 +12,7 @@ export interface ReviewPromptConfig {
 }
 
 /**
- * Builds a context-aware review prompt for Gemini
+ * Builds a context-aware review prompt for the AI backend
  * @param config Review prompt configuration
  * @returns Formatted prompt string
  */

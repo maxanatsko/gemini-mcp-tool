@@ -3,13 +3,13 @@ import { ReviewComment } from './reviewSessionCache.js';
 import { Logger } from './logger.js';
 
 /**
- * Parses Gemini's review response into structured ReviewComment objects
- * @param geminiResponse The raw response from Gemini
+ * Parses review response into structured ReviewComment objects
+ * @param responseText The raw response from the AI backend
  * @param roundNumber The current review round number
  * @returns Array of parsed review comments
  */
 export function parseReviewResponse(
-  geminiResponse: string,
+  responseText: string,
   roundNumber: number
 ): ReviewComment[] {
   const comments: ReviewComment[] = [];
@@ -23,7 +23,7 @@ export function parseReviewResponse(
     let match;
     let matchCount = 0;
 
-    while ((match = commentPattern.exec(geminiResponse)) !== null) {
+    while ((match = commentPattern.exec(responseText)) !== null) {
       matchCount++;
       const [_, severity, file, lines, issue, details, recommendation] = match;
 
@@ -65,7 +65,7 @@ export function parseReviewResponse(
     // If no structured comments found, try fallback parsing
     if (comments.length === 0) {
       Logger.debug('No structured comments found, attempting fallback parsing');
-      const fallbackComments = fallbackParse(geminiResponse, roundNumber);
+      const fallbackComments = fallbackParse(responseText, roundNumber);
       comments.push(...fallbackComments);
     }
   } catch (error) {
@@ -102,11 +102,11 @@ export function generateCommentId(): string {
 /**
  * Fallback parser for when structured format isn't followed
  * Attempts to extract any review-like content
- * @param geminiResponse The raw response
+ * @param responseText The raw response
  * @param roundNumber The round number
  * @returns Array of comments (may be empty or contain unstructured feedback)
  */
-function fallbackParse(geminiResponse: string, roundNumber: number): ReviewComment[] {
+function fallbackParse(responseText: string, roundNumber: number): ReviewComment[] {
   const comments: ReviewComment[] = [];
 
   // Look for common issue indicators
@@ -120,7 +120,7 @@ function fallbackParse(geminiResponse: string, roundNumber: number): ReviewComme
 
   for (const pattern of issuePatterns) {
     let match;
-    while ((match = pattern.exec(geminiResponse)) !== null) {
+    while ((match = pattern.exec(responseText)) !== null) {
       foundAny = true;
       const comment: ReviewComment = {
         id: generateCommentId(),
@@ -135,13 +135,13 @@ function fallbackParse(geminiResponse: string, roundNumber: number): ReviewComme
   }
 
   // If still nothing found and response has substantial content, create a general comment
-  if (!foundAny && geminiResponse.trim().length > 50) {
+  if (!foundAny && responseText.trim().length > 50) {
     Logger.debug('Creating general unstructured comment from response');
     comments.push({
       id: generateCommentId(),
       filePattern: 'General',
       severity: 'question',
-      comment: geminiResponse.trim(),
+      comment: responseText.trim(),
       roundGenerated: roundNumber,
       status: 'pending'
     });

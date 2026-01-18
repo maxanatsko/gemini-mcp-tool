@@ -139,7 +139,7 @@ export const brainstormTool: UnifiedTool = {
   prompt: {
     description: "Generate structured brainstorming prompt with methodology-driven ideation, domain context integration, and analytical evaluation framework",
   },
-  category: 'gemini',
+  category: 'ai',
   execute: async (args, onProgress) => {
     const {
       prompt,
@@ -259,7 +259,7 @@ export const brainstormTool: UnifiedTool = {
 };
 
 /**
- * Parses ideas from Gemini's brainstorm response
+ * Parses ideas from brainstorm response
  * Extracts idea names, descriptions, and scores
  */
 function parseIdeasFromResponse(response: string): Array<{

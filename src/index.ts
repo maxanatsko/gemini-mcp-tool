@@ -92,11 +92,11 @@ function startProgressUpdates(
   latestOutput = ""; // Reset latest output
   
   const progressMessages = [
-    `🧠 ${operationName} - Gemini is analyzing your request...`,
+    `🧠 ${operationName} - Analyzing your request...`,
     `📊 ${operationName} - Processing files and generating insights...`,
     `✨ ${operationName} - Creating structured response for your review...`,
     `⏱️ ${operationName} - Large analysis in progress (this is normal for big requests)...`,
-    `🔍 ${operationName} - Still working... Gemini takes time for quality results...`,
+    `🔍 ${operationName} - Still working... Quality results take time...`,
   ];
   
   let messageIndex = 0;

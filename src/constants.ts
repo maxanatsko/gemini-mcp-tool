@@ -16,11 +16,10 @@ export const STATUS_MESSAGES = {
   QUOTA_SWITCHING: "🚫 Gemini 2.5 Pro quota exceeded, switching to Flash model...",
   FLASH_RETRY: "⚡ Retrying with Gemini 2.5 Flash...",
   FLASH_SUCCESS: "✅ Flash model completed successfully",
-  SANDBOX_EXECUTING: "🔒 Executing Gemini CLI command in sandbox mode...",
-  GEMINI_RESPONSE: "Gemini response:",
+  SANDBOX_EXECUTING: "🔒 Executing CLI command in sandbox mode...",
   // Timeout prevention messages
   PROCESSING_START: "🔍 Starting analysis (may take 5-15 minutes for large codebases)",
-  PROCESSING_CONTINUE: "⏳ Still processing... Gemini is working on your request",
+  PROCESSING_CONTINUE: "⏳ Still processing... Working on your request",
   PROCESSING_COMPLETE: "✅ Analysis completed successfully",
 } as const;
 

@@ -7,7 +7,7 @@ import {
   STATUS_MESSAGES,
   MODELS
 } from '../constants.js';
-import { askSessionManager } from '../utils/askGeminiSessionManager.js';
+import { askSessionManager } from '../utils/askSessionManager.js';
 import { extractFilesFromPrompt } from '../utils/reviewPromptBuilder.js';
 import { Logger } from '../utils/logger.js';
 
@@ -30,7 +30,7 @@ export const askTool: UnifiedTool = {
   prompt: {
     description: "Execute AI query with optional file references, session management, and backend selection.",
   },
-  category: 'gemini',
+  category: 'ai',
   execute: async (args, onProgress) => {
     const {
       prompt,
