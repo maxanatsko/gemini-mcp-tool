@@ -7,7 +7,7 @@ import {
   STATUS_MESSAGES,
   MODELS
 } from '../constants.js';
-import { askGeminiSessionManager } from '../utils/askGeminiSessionManager.js';
+import { askSessionManager } from '../utils/askGeminiSessionManager.js';
 import { extractFilesFromPrompt } from '../utils/reviewPromptBuilder.js';
 import { Logger } from '../utils/logger.js';
 
@@ -49,16 +49,16 @@ export const askTool: UnifiedTool = {
     }
 
     // Session handling - load first so we can use lastBackend for backend selection
-    let sessionData: Awaited<ReturnType<typeof askGeminiSessionManager.getOrCreate>> | null = null;
+    let sessionData: Awaited<ReturnType<typeof askSessionManager.getOrCreate>> | null = null;
     let enhancedPrompt = prompt as string;
 
     if (session) {
       try {
-        sessionData = await askGeminiSessionManager.getOrCreate(session as string);
+        sessionData = await askSessionManager.getOrCreate(session as string);
 
         // Build conversation context if history is enabled
         if (includeHistory && sessionData.conversationHistory.length > 0) {
-          const historyContext = askGeminiSessionManager.buildConversationContext(sessionData, 3);
+          const historyContext = askSessionManager.buildConversationContext(sessionData, 3);
           enhancedPrompt = `${historyContext}\n\n# Current Question\n${prompt}`;
         }
 
@@ -98,7 +98,7 @@ export const askTool: UnifiedTool = {
         const contextFiles = extractFilesFromPrompt(prompt as string);
         // Use model from backend result (actual model used), fallback to input or default
         const usedModel = result.model || (model as string) || MODELS.PRO_3;
-        askGeminiSessionManager.addRound(
+        askSessionManager.addRound(
           sessionData,
           prompt as string,
           result.response,
@@ -107,7 +107,7 @@ export const askTool: UnifiedTool = {
           backendType,
           result.codexThreadId // Store Codex thread ID for native session resume
         );
-        await askGeminiSessionManager.save(sessionData);
+        await askSessionManager.save(sessionData);
         onProgress?.(`💾 Saved to session '${session}' (${sessionData.totalRounds} rounds)`);
         if (result.codexThreadId) {
           onProgress?.(`🔗 Codex thread: ${result.codexThreadId.substring(0, 8)}...`);

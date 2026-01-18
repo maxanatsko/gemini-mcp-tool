@@ -30,7 +30,7 @@ export interface ReviewRound {
   timestamp: number;
   filesReviewed: string[];
   userPrompt: string;
-  geminiResponse: string;
+  response: string;
   commentsGenerated: ReviewComment[];
   gitState: GitState;
 }

@@ -238,7 +238,7 @@ export const reviewCodeTool: UnifiedTool = {
         timestamp: Date.now(),
         filesReviewed: filesReviewed as string[],
         userPrompt: prompt as string,
-        geminiResponse: backendResult.response,
+        response: backendResult.response,
         commentsGenerated: newComments,
         gitState: currentGitState
       };

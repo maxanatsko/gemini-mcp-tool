@@ -45,7 +45,7 @@ export class BrainstormSessionManager {
   addRound(
     session: BrainstormSessionData,
     userPrompt: string,
-    geminiResponse: string,
+    response: string,
     ideas: Array<{
       name: string;
       description: string;
@@ -70,7 +70,7 @@ export class BrainstormSessionManager {
       roundNumber: session.rounds.length + 1,
       timestamp: Date.now(),
       userPrompt,
-      geminiResponse,
+      response,
       ideasGenerated: parsedIdeas,
       backend
     });

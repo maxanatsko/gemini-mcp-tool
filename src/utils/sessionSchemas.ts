@@ -2,16 +2,16 @@ import { SessionData } from './sessionManager.js';
 import { GitState } from './gitStateDetector.js';
 
 /**
- * Ask-Gemini Session Data
- * Tracks multi-turn Q&A conversations with context
+ * Ask Session Data
+ * Tracks multi-turn Q&A conversations with context across backends
  */
-export interface AskGeminiSessionData extends SessionData {
+export interface AskSessionData extends SessionData {
   /** History of all conversation rounds */
   conversationHistory: Array<{
     roundNumber: number;
     timestamp: number;
     userPrompt: string;
-    geminiResponse: string;
+    response: string;
     model: string;
     tokenCount?: number;
     /** Which backend was used for this round */
@@ -51,7 +51,7 @@ export interface BrainstormSessionData extends SessionData {
     roundNumber: number;
     timestamp: number;
     userPrompt: string;
-    geminiResponse: string;
+    response: string;
     ideasGenerated: Array<{
       ideaId: string;
       name: string;
@@ -102,7 +102,7 @@ export interface ReviewCodeSessionData extends SessionData {
     timestamp: number;
     filesReviewed: string[];
     userPrompt: string;
-    geminiResponse: string;
+    response: string;
     commentsGenerated: Array<{
       id: string;
       filePattern: string;
@@ -143,3 +143,6 @@ export interface ReviewCodeSessionData extends SessionData {
   /** Last backend used (for continuing with same backend) */
   lastBackend?: 'gemini' | 'codex';
 }
+
+// Backward compatibility alias
+export type AskGeminiSessionData = AskSessionData;

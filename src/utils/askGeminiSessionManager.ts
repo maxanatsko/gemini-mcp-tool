@@ -1,21 +1,21 @@
 import { SessionManager } from './sessionManager.js';
-import { AskGeminiSessionData } from './sessionSchemas.js';
+import { AskSessionData } from './sessionSchemas.js';
 
 /**
- * Session manager for ask-gemini tool
- * Tracks multi-turn conversations with context
+ * Session manager for ask tool
+ * Tracks multi-turn conversations with context across backends
  */
-export class AskGeminiSessionManager {
-  private sessionManager: SessionManager<AskGeminiSessionData>;
+export class AskSessionManager {
+  private sessionManager: SessionManager<AskSessionData>;
 
   constructor() {
-    this.sessionManager = new SessionManager<AskGeminiSessionData>('ask-gemini');
+    this.sessionManager = new SessionManager<AskSessionData>('ask');
   }
 
   /**
    * Creates a new conversation session
    */
-  createSession(sessionId: string): AskGeminiSessionData {
+  createSession(sessionId: string): AskSessionData {
     const now = Date.now();
     return {
       sessionId,
@@ -32,19 +32,19 @@ export class AskGeminiSessionManager {
    * Adds a conversation round to the session
    */
   addRound(
-    session: AskGeminiSessionData,
+    session: AskSessionData,
     userPrompt: string,
     response: string,
     model: string,
     contextFiles?: string[],
     backend?: 'gemini' | 'codex',
     codexThreadId?: string
-  ): AskGeminiSessionData {
+  ): AskSessionData {
     session.conversationHistory.push({
       roundNumber: session.totalRounds + 1,
       timestamp: Date.now(),
       userPrompt,
-      geminiResponse: response,
+      response,
       model,
       backend
     });
@@ -76,7 +76,7 @@ export class AskGeminiSessionManager {
    * @param maxRounds Maximum number of previous rounds to include (default: 3)
    * @returns Formatted conversation context
    */
-  buildConversationContext(session: AskGeminiSessionData, maxRounds: number = 3): string {
+  buildConversationContext(session: AskSessionData, maxRounds: number = 3): string {
     if (session.conversationHistory.length === 0) {
       return '';
     }
@@ -85,13 +85,14 @@ export class AskGeminiSessionManager {
 
     const contextParts = recentRounds.map(round => {
       // Truncate long responses for context
-      const truncatedResponse = round.geminiResponse.length > 500
-        ? round.geminiResponse.slice(0, 500) + '...'
-        : round.geminiResponse;
+      const truncatedResponse = round.response.length > 500
+        ? round.response.slice(0, 500) + '...'
+        : round.response;
 
+      const backendLabel = round.backend === 'codex' ? 'Codex' : 'Gemini';
       return `[Round ${round.roundNumber}]
 User: ${round.userPrompt}
-Gemini: ${truncatedResponse}`;
+${backendLabel}: ${truncatedResponse}`;
     });
 
     return `# Conversation History\n\n${contextParts.join('\n\n')}`;
@@ -100,21 +101,21 @@ Gemini: ${truncatedResponse}`;
   /**
    * Saves a session
    */
-  async save(session: AskGeminiSessionData): Promise<void> {
+  async save(session: AskSessionData): Promise<void> {
     await this.sessionManager.save(session.sessionId, session);
   }
 
   /**
    * Loads a session
    */
-  async load(sessionId: string): Promise<AskGeminiSessionData | null> {
+  async load(sessionId: string): Promise<AskSessionData | null> {
     return await this.sessionManager.load(sessionId);
   }
 
   /**
    * Lists all sessions
    */
-  async list(): Promise<AskGeminiSessionData[]> {
+  async list(): Promise<AskSessionData[]> {
     return await this.sessionManager.list();
   }
 
@@ -128,7 +129,7 @@ Gemini: ${truncatedResponse}`;
   /**
    * Gets or creates a session
    */
-  async getOrCreate(sessionId: string): Promise<AskGeminiSessionData> {
+  async getOrCreate(sessionId: string): Promise<AskSessionData> {
     const existing = await this.load(sessionId);
     if (existing) {
       return existing;
@@ -145,4 +146,8 @@ Gemini: ${truncatedResponse}`;
 }
 
 // Export singleton instance
-export const askGeminiSessionManager = new AskGeminiSessionManager();
+export const askSessionManager = new AskSessionManager();
+
+// Backward compatibility aliases
+export const AskGeminiSessionManager = AskSessionManager;
+export const askGeminiSessionManager = askSessionManager;
