@@ -7,6 +7,15 @@ export interface ChangeModeEdit {
   newEndLine: number;
   newCode: string;
 }
+
+/**
+ * Safely parses a line number string, returning 0 for invalid values
+ */
+function parseLineNumber(value: string): number {
+  const parsed = parseInt(value, 10);
+  return !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+}
+
 export function parseChangeModeOutput(responseText: string): ChangeModeEdit[] {
   const edits: ChangeModeEdit[] = [];
   const markdownPattern = /\*\*FILE:\s*(.+?):(\d+)\*\*\s*\n```\s*\nOLD:\s*\n([\s\S]*?)\nNEW:\s*\n([\s\S]*?)\n```/g;
@@ -17,7 +26,7 @@ export function parseChangeModeOutput(responseText: string): ChangeModeEdit[] {
 
     const oldCode = oldCodeRaw.trimEnd();
     const newCode = newCodeRaw.trimEnd();
-    const startLine = parseInt(startLineStr, 10);
+    const startLine = parseLineNumber(startLineStr);
 
     const oldLineCount = oldCode === '' ? 0 : oldCode.split('\n').length;
     const newLineCount = newCode === '' ? 0 : newCode.split('\n').length;
@@ -61,11 +70,11 @@ export function parseChangeModeOutput(responseText: string): ChangeModeEdit[] {
 
       edits.push({
         filename: oldFilename.trim(),
-        oldStartLine: parseInt(oldStartLine, 10),
-        oldEndLine: parseInt(oldEndLine, 10),
+        oldStartLine: parseLineNumber(oldStartLine),
+        oldEndLine: parseLineNumber(oldEndLine),
         oldCode: oldCode.trimEnd(),
-        newStartLine: parseInt(newStartLine, 10),
-        newEndLine: parseInt(newEndLine, 10),
+        newStartLine: parseLineNumber(newStartLine),
+        newEndLine: parseLineNumber(newEndLine),
         newCode: newCode.trimEnd(),
       });
     }
