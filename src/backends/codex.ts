@@ -102,6 +102,7 @@ export class CodexBackend implements BackendExecutor {
 
     // Sandbox mode
     if (config.sandbox === false) {
+      Logger.warn('⚠️ SECURITY: Full filesystem access enabled - potential for data loss or security issues');
       args.push(CODEX_CLI.FLAGS.SANDBOX, CODEX_CLI.SANDBOX_MODES.FULL_ACCESS);
     } else {
       args.push(CODEX_CLI.FLAGS.SANDBOX, CODEX_CLI.SANDBOX_MODES.WORKSPACE_WRITE);
@@ -172,8 +173,18 @@ export class CodexBackend implements BackendExecutor {
       try {
         resolvedPath = fs.realpathSync(absolutePath);
       } catch {
-        // File doesn't exist, will be handled below
+        // File doesn't exist - use path.resolve for basic path normalization
+        // But only allow if the normalized path stays within workspace
         resolvedPath = path.resolve(absolutePath);
+
+        // Extra security: if file doesn't exist and path contains .., deny access
+        // This prevents potential TOCTOU attacks where file is created after check
+        if (filePath.includes('..')) {
+          deniedFiles.push(filePath);
+          Logger.warn(`Path traversal blocked for non-existent path with ..: ${filePath}`);
+          translated = translated.replace(ref, `[Access denied: path traversal not allowed]`);
+          continue;
+        }
       }
 
       // Security check: Ensure path is within workspace

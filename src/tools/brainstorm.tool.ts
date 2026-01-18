@@ -245,8 +245,9 @@ export const brainstormTool: UnifiedTool = {
         );
         await brainstormSessionManager.save(sessionData);
         onProgress?.(`💾 Saved to session '${session}' (${sessionData.totalIdeas} total ideas, ${sessionData.activeIdeas} active)`);
-        if (result.codexThreadId) {
-          onProgress?.(`🔗 Codex thread: ${result.codexThreadId.substring(0, 8)}...`);
+        if (result.codexThreadId && result.codexThreadId.length > 0) {
+          const threadPreview = result.codexThreadId.slice(0, 8);
+          onProgress?.(`🔗 Codex thread: ${threadPreview}...`);
         }
       } catch (error) {
         onProgress?.(`⚠️  Session save failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -262,6 +263,22 @@ export const brainstormTool: UnifiedTool = {
 };
 
 /**
+ * Escapes special regex characters in a string to prevent ReDoS attacks
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Safely parses an integer score, returning undefined for invalid values
+ */
+function parseScore(matchResult: RegExpMatchArray | null): number | undefined {
+  if (!matchResult) return undefined;
+  const parsed = parseInt(matchResult[1], 10);
+  return !isNaN(parsed) && parsed >= 1 && parsed <= 10 ? parsed : undefined;
+}
+
+/**
  * Parses ideas from brainstorm response
  * Extracts idea names, descriptions, and scores
  */
@@ -272,7 +289,13 @@ function parseIdeasFromResponse(response: string): Array<{
   impact?: number;
   innovation?: number;
 }> {
-  const ideas: Array<any> = [];
+  const ideas: Array<{
+    name: string;
+    description: string;
+    feasibility?: number;
+    impact?: number;
+    innovation?: number;
+  }> = [];
 
   // Pattern: ### Idea [N]: [Name]
   const ideaPattern = /###\s+Idea\s+\d+:\s*(.+?)\n\*\*Description:\*\*\s*(.+?)(?=\n###|\n\*\*Feasibility|\n---|$)/gis;
@@ -282,23 +305,26 @@ function parseIdeasFromResponse(response: string): Array<{
     const name = match[1].trim();
     const description = match[2].trim();
 
-    // Try to extract scores
+    // Escape regex metacharacters to prevent ReDoS attacks
+    const escapedName = escapeRegex(name);
+
+    // Try to extract scores with escaped name
     const feasibilityMatch = response.match(
-      new RegExp(`${name}[\\s\\S]{0,300}\\*\\*Feasibility:\\*\\*\\s*(\\d+)`, 'i')
+      new RegExp(`${escapedName}[\\s\\S]{0,300}\\*\\*Feasibility:\\*\\*\\s*(\\d+)`, 'i')
     );
     const impactMatch = response.match(
-      new RegExp(`${name}[\\s\\S]{0,300}\\*\\*Impact:\\*\\*\\s*(\\d+)`, 'i')
+      new RegExp(`${escapedName}[\\s\\S]{0,300}\\*\\*Impact:\\*\\*\\s*(\\d+)`, 'i')
     );
     const innovationMatch = response.match(
-      new RegExp(`${name}[\\s\\S]{0,300}\\*\\*Innovation:\\*\\*\\s*(\\d+)`, 'i')
+      new RegExp(`${escapedName}[\\s\\S]{0,300}\\*\\*Innovation:\\*\\*\\s*(\\d+)`, 'i')
     );
 
     ideas.push({
       name,
       description,
-      feasibility: feasibilityMatch ? parseInt(feasibilityMatch[1], 10) : undefined,
-      impact: impactMatch ? parseInt(impactMatch[1], 10) : undefined,
-      innovation: innovationMatch ? parseInt(innovationMatch[1], 10) : undefined
+      feasibility: parseScore(feasibilityMatch),
+      impact: parseScore(impactMatch),
+      innovation: parseScore(innovationMatch)
     });
   }
 

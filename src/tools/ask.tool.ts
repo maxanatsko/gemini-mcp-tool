@@ -112,8 +112,9 @@ export const askTool: UnifiedTool = {
         );
         await askSessionManager.save(sessionData);
         onProgress?.(`💾 Saved to session '${session}' (${sessionData.totalRounds} rounds)`);
-        if (result.codexThreadId) {
-          onProgress?.(`🔗 Codex thread: ${result.codexThreadId.substring(0, 8)}...`);
+        if (result.codexThreadId && result.codexThreadId.length > 0) {
+          const threadPreview = result.codexThreadId.slice(0, 8);
+          onProgress?.(`🔗 Codex thread: ${threadPreview}...`);
         }
       } catch (error) {
         onProgress?.(`⚠️  Session save failed: ${error instanceof Error ? error.message : String(error)}`);

@@ -116,10 +116,17 @@ export const reviewCodeTool: UnifiedTool = {
       const currentGitState = await getCurrentGitState();
       const detectedSessionId = generateSessionId(currentGitState);
 
+      // Sanitize user-provided session ID to prevent path traversal
+      const sanitizeSessionId = (id: string): string => {
+        // Only allow alphanumeric, hyphens, underscores; limit to 100 chars
+        return id.replace(/[^a-zA-Z0-9-_]/g, '-').slice(0, 100);
+      };
+
       // If user provides a session ID, incorporate git state to prevent cross-task context bleeding
       // e.g., "iterative-review" becomes "iterative-review-main-abc12345"
-      const targetSessionId = sessionId
-        ? `${sessionId}-${currentGitState.branch.replace(/[^a-zA-Z0-9-_]/g, '-')}-${currentGitState.commitHash.slice(0, 8)}`
+      const sanitizedSessionId = sessionId ? sanitizeSessionId(sessionId as string) : null;
+      const targetSessionId = sanitizedSessionId
+        ? `${sanitizedSessionId}-${currentGitState.branch.replace(/[^a-zA-Z0-9-_]/g, '-')}-${currentGitState.commitHash.slice(0, 8)}`
         : detectedSessionId;
 
       Logger.debug(`Current git state: ${currentGitState.branch} @ ${currentGitState.commitHash.slice(0, 8)}`);
@@ -151,7 +158,7 @@ export const reviewCodeTool: UnifiedTool = {
           session.currentGitState = currentGitState;
           Logger.debug(`Loaded existing session with ${session.totalRounds} rounds`);
         } else {
-          if (sessionId) {
+          if (sanitizedSessionId) {
             // User explicitly requested a session that doesn't exist
             return formatSessionNotFound(
               targetSessionId,
@@ -218,9 +225,10 @@ export const reviewCodeTool: UnifiedTool = {
       session.lastBackend = backendType;
 
       // Store Codex thread ID for native session resume
-      if (backendResult.codexThreadId) {
+      if (backendResult.codexThreadId && backendResult.codexThreadId.length > 0) {
         session.codexThreadId = backendResult.codexThreadId;
-        onProgress?.(`🔗 Codex thread: ${backendResult.codexThreadId.substring(0, 8)}...`);
+        const threadPreview = backendResult.codexThreadId.slice(0, 8);
+        onProgress?.(`🔗 Codex thread: ${threadPreview}...`);
       }
 
       // Step 7: Parse response into structured comments
