@@ -34,16 +34,19 @@ export class AskGeminiSessionManager {
   addRound(
     session: AskGeminiSessionData,
     userPrompt: string,
-    geminiResponse: string,
+    response: string,
     model: string,
-    contextFiles?: string[]
+    contextFiles?: string[],
+    backend?: 'gemini' | 'codex',
+    codexThreadId?: string
   ): AskGeminiSessionData {
     session.conversationHistory.push({
       roundNumber: session.totalRounds + 1,
       timestamp: Date.now(),
       userPrompt,
-      geminiResponse,
-      model
+      geminiResponse: response,
+      model,
+      backend
     });
 
     session.totalRounds++;
@@ -52,6 +55,16 @@ export class AskGeminiSessionManager {
     // Track context files
     if (contextFiles && contextFiles.length > 0) {
       session.contextFiles = [...new Set([...session.contextFiles, ...contextFiles])];
+    }
+
+    // Store Codex thread ID for native session resume
+    if (codexThreadId) {
+      session.codexThreadId = codexThreadId;
+    }
+
+    // Track which backend was used last
+    if (backend) {
+      session.lastBackend = backend;
     }
 
     return session;

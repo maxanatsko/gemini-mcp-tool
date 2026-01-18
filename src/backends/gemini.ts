@@ -3,7 +3,7 @@
  */
 
 import { spawn } from 'child_process';
-import { BackendExecutor, BackendConfig, BackendType } from './types.js';
+import { BackendExecutor, BackendConfig, BackendType, BackendResult } from './types.js';
 import { Logger } from '../utils/logger.js';
 import {
   ERROR_MESSAGES,
@@ -19,8 +19,9 @@ export class GeminiBackend implements BackendExecutor {
     prompt: string,
     config: BackendConfig,
     onProgress?: (output: string) => void
-  ): Promise<string> {
+  ): Promise<BackendResult> {
     let processedPrompt = prompt;
+    let usedModel = config.model;
 
     // Apply changeMode instructions if enabled
     if (config.changeMode) {
@@ -30,7 +31,12 @@ export class GeminiBackend implements BackendExecutor {
     const args = this.buildArgs(processedPrompt, config);
 
     try {
-      return await this.executeCommand(args, onProgress, config.cwd);
+      const response = await this.executeCommand(args, onProgress, config.cwd);
+      return {
+        response,
+        backend: this.name,
+        model: usedModel,
+      };
     } catch (error) {
       // Handle quota exceeded with fallback to Flash model
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -40,12 +46,17 @@ export class GeminiBackend implements BackendExecutor {
 
         const fallbackConfig = { ...config, model: MODELS.FLASH };
         const fallbackArgs = this.buildArgs(processedPrompt, fallbackConfig);
+        usedModel = MODELS.FLASH;
 
         try {
-          const result = await this.executeCommand(fallbackArgs, onProgress, config.cwd);
+          const response = await this.executeCommand(fallbackArgs, onProgress, config.cwd);
           Logger.warn(`Successfully executed with ${MODELS.FLASH} fallback.`);
           onProgress?.(STATUS_MESSAGES.FLASH_SUCCESS);
-          return result;
+          return {
+            response,
+            backend: this.name,
+            model: usedModel,
+          };
         } catch (fallbackError) {
           const fallbackErrorMessage = fallbackError instanceof Error
             ? fallbackError.message

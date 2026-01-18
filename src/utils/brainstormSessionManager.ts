@@ -52,7 +52,9 @@ export class BrainstormSessionManager {
       feasibility?: number;
       impact?: number;
       innovation?: number;
-    }>
+    }>,
+    backend?: 'gemini' | 'codex',
+    codexThreadId?: string
   ): BrainstormSessionData {
     const parsedIdeas = ideas.map(idea => ({
       ideaId: `idea-${randomUUID()}`,
@@ -69,12 +71,23 @@ export class BrainstormSessionManager {
       timestamp: Date.now(),
       userPrompt,
       geminiResponse,
-      ideasGenerated: parsedIdeas
+      ideasGenerated: parsedIdeas,
+      backend
     });
 
     session.totalIdeas += parsedIdeas.length;
     session.activeIdeas += parsedIdeas.length;
     session.lastAccessedAt = Date.now();
+
+    // Store Codex thread ID for native session resume
+    if (codexThreadId) {
+      session.codexThreadId = codexThreadId;
+    }
+
+    // Track which backend was used last
+    if (backend) {
+      session.lastBackend = backend;
+    }
 
     return session;
   }

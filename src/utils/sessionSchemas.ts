@@ -14,6 +14,8 @@ export interface AskGeminiSessionData extends SessionData {
     geminiResponse: string;
     model: string;
     tokenCount?: number;
+    /** Which backend was used for this round */
+    backend?: 'gemini' | 'codex';
   }>;
   /** Total number of rounds in this conversation */
   totalRounds: number;
@@ -24,6 +26,10 @@ export interface AskGeminiSessionData extends SessionData {
     primaryTopic?: string;
     tags?: string[];
   };
+  /** Codex thread ID for native session resume (only set when using Codex backend) */
+  codexThreadId?: string;
+  /** Last backend used (for continuing with same backend) */
+  lastBackend?: 'gemini' | 'codex';
 }
 
 /**
@@ -56,6 +62,8 @@ export interface BrainstormSessionData extends SessionData {
       status: 'active' | 'refined' | 'merged' | 'discarded';
       notes?: string;
     }>;
+    /** Which backend was used for this round */
+    backend?: 'gemini' | 'codex';
   }>;
 
   /** Total ideas generated across all rounds */
@@ -70,6 +78,11 @@ export interface BrainstormSessionData extends SessionData {
     ideaIds: string[];
     reason: string;
   }>;
+
+  /** Codex thread ID for native session resume (only set when using Codex backend) */
+  codexThreadId?: string;
+  /** Last backend used (for continuing with same backend) */
+  lastBackend?: 'gemini' | 'codex';
 }
 
 /**
@@ -125,4 +138,8 @@ export interface ReviewCodeSessionData extends SessionData {
   totalRounds: number;
   /** Current session state */
   sessionState: 'active' | 'paused' | 'completed';
+  /** Codex thread ID for native session resume (only set when using Codex backend) */
+  codexThreadId?: string;
+  /** Last backend used (for continuing with same backend) */
+  lastBackend?: 'gemini' | 'codex';
 }

@@ -184,8 +184,8 @@ export const reviewCodeTool: UnifiedTool = {
 
       Logger.debug(`Built review prompt (${reviewPrompt.length} chars)`);
 
-      // Step 6: Execute review via selected backend
-      const backendType = (backendChoice as BackendType) || 'gemini';
+      // Step 6: Execute review via selected backend (defaults to session's last backend, then Gemini)
+      const backendType: BackendType = backendChoice || session.lastBackend || 'gemini';
       const backend = await getBackend(backendType);
 
       onProgress?.(`🤖 Using ${backend.name} backend...`);
@@ -193,7 +193,8 @@ export const reviewCodeTool: UnifiedTool = {
         `🔍 Round ${session.totalRounds + 1}: Reviewing ${files?.length || 'tracked'} file(s)...`
       );
 
-      const geminiResponse = await backend.execute(
+      // Pass existing codexThreadId for native session resume when using Codex
+      const backendResult = await backend.execute(
         reviewPrompt,
         {
           provider: backendType,
@@ -202,13 +203,21 @@ export const reviewCodeTool: UnifiedTool = {
           changeMode: false,
           allowedTools: allowedTools as string[] | undefined,
           cwd: cwd as string | undefined,
+          codexThreadId: session.codexThreadId, // For Codex native session resume
         },
         onProgress
       );
 
+      // Store Codex thread ID for native session resume
+      if (backendResult.codexThreadId) {
+        session.codexThreadId = backendResult.codexThreadId;
+        session.lastBackend = backendType;
+        onProgress?.(`🔗 Codex thread: ${backendResult.codexThreadId.substring(0, 8)}...`);
+      }
+
       // Step 7: Parse response into structured comments
       onProgress?.('📝 Parsing review feedback...');
-      let newComments = parseReviewResponse(geminiResponse, session.totalRounds + 1);
+      let newComments = parseReviewResponse(backendResult.response, session.totalRounds + 1);
       newComments = validateComments(newComments);
 
       // Apply severity filter if requested
@@ -229,7 +238,7 @@ export const reviewCodeTool: UnifiedTool = {
         timestamp: Date.now(),
         filesReviewed: filesReviewed as string[],
         userPrompt: prompt as string,
-        geminiResponse,
+        geminiResponse: backendResult.response,
         commentsGenerated: newComments,
         gitState: currentGitState
       };

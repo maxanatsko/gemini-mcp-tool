@@ -48,14 +48,8 @@ export const askTool: UnifiedTool = {
       throw new Error(ERROR_MESSAGES.NO_PROMPT_PROVIDED);
     }
 
-    // Get the appropriate backend (defaults to Gemini)
-    const backendType = (backendChoice as BackendType) || 'gemini';
-    const backend = await getBackend(backendType);
-
-    onProgress?.(`🤖 Using ${backend.name} backend...`);
-
-    // Session handling
-    let sessionData = null;
+    // Session handling - load first so we can use lastBackend for backend selection
+    let sessionData: Awaited<ReturnType<typeof askGeminiSessionManager.getOrCreate>> | null = null;
     let enhancedPrompt = prompt as string;
 
     if (session) {
@@ -76,7 +70,14 @@ export const askTool: UnifiedTool = {
       }
     }
 
+    // Get the appropriate backend (defaults to session's last backend, then Gemini)
+    const backendType: BackendType = backendChoice || sessionData?.lastBackend || 'gemini';
+    const backend = await getBackend(backendType);
+
+    onProgress?.(`🤖 Using ${backend.name} backend...`);
+
     // Execute via the selected backend
+    // Pass existing codexThreadId for native session resume when using Codex
     const result = await backend.execute(
       enhancedPrompt,
       {
@@ -86,6 +87,7 @@ export const askTool: UnifiedTool = {
         changeMode: !!changeMode,
         allowedTools: allowedTools as string[] | undefined,
         cwd: cwd as string | undefined,
+        codexThreadId: sessionData?.codexThreadId, // For Codex native session resume
       },
       onProgress
     );
@@ -94,16 +96,22 @@ export const askTool: UnifiedTool = {
     if (session && sessionData) {
       try {
         const contextFiles = extractFilesFromPrompt(prompt as string);
-        const usedModel = model ? (model as string) : MODELS.PRO_3;
+        // Use model from backend result (actual model used), fallback to input or default
+        const usedModel = result.model || (model as string) || MODELS.PRO_3;
         askGeminiSessionManager.addRound(
           sessionData,
           prompt as string,
-          result,
+          result.response,
           usedModel,
-          contextFiles
+          contextFiles,
+          backendType,
+          result.codexThreadId // Store Codex thread ID for native session resume
         );
         await askGeminiSessionManager.save(sessionData);
         onProgress?.(`💾 Saved to session '${session}' (${sessionData.totalRounds} rounds)`);
+        if (result.codexThreadId) {
+          onProgress?.(`🔗 Codex thread: ${result.codexThreadId.substring(0, 8)}...`);
+        }
       } catch (error) {
         onProgress?.(`⚠️  Session save failed: ${error instanceof Error ? error.message : String(error)}`);
         Logger.error(`Failed to save session '${session}': ${error}`);
@@ -112,12 +120,12 @@ export const askTool: UnifiedTool = {
     }
 
     if (changeMode) {
-      return processChangeModeOutput(result);
+      return processChangeModeOutput(result.response);
     }
 
     // Use backend-aware response prefix
     const backendName = backend.name.charAt(0).toUpperCase() + backend.name.slice(1);
-    return `${backendName} response:\n${result}`;
+    return `${backendName} response:\n${result.response}`;
   }
 };
 

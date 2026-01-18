@@ -203,8 +203,8 @@ export const brainstormTool: UnifiedTool = {
 
     Logger.debug(`Brainstorm: Using methodology '${methodology}' for domain '${domain || 'general'}'`);
 
-    // Get the appropriate backend (defaults to Gemini)
-    const backendType = (backendChoice as BackendType) || 'gemini';
+    // Get the appropriate backend (defaults to session's last backend, then Gemini)
+    const backendType: BackendType = backendChoice || sessionData?.lastBackend || 'gemini';
     const backend = await getBackend(backendType);
 
     // Report progress to user
@@ -212,6 +212,7 @@ export const brainstormTool: UnifiedTool = {
     onProgress?.(`Generating ${ideaCount} ideas via ${methodology} methodology...`);
 
     // Execute via the selected backend
+    // Pass existing codexThreadId for native session resume when using Codex
     const result = await backend.execute(
       enhancedPrompt,
       {
@@ -221,6 +222,7 @@ export const brainstormTool: UnifiedTool = {
         changeMode: false,
         allowedTools: allowedTools as string[] | undefined,
         cwd: cwd as string | undefined,
+        codexThreadId: sessionData?.codexThreadId, // For Codex native session resume
       },
       onProgress
     );
@@ -229,10 +231,20 @@ export const brainstormTool: UnifiedTool = {
     if (session && sessionData) {
       try {
         // Parse ideas from response (simple extraction)
-        const ideas = parseIdeasFromResponse(result);
-        brainstormSessionManager.addRound(sessionData, prompt as string, result, ideas);
+        const ideas = parseIdeasFromResponse(result.response);
+        brainstormSessionManager.addRound(
+          sessionData,
+          prompt as string,
+          result.response,
+          ideas,
+          backendType,
+          result.codexThreadId // Store Codex thread ID for native session resume
+        );
         await brainstormSessionManager.save(sessionData);
         onProgress?.(`💾 Saved to session '${session}' (${sessionData.totalIdeas} total ideas, ${sessionData.activeIdeas} active)`);
+        if (result.codexThreadId) {
+          onProgress?.(`🔗 Codex thread: ${result.codexThreadId.substring(0, 8)}...`);
+        }
       } catch (error) {
         onProgress?.(`⚠️  Session save failed: ${error instanceof Error ? error.message : String(error)}`);
         Logger.error(`Failed to save session '${session}': ${error}`);
@@ -240,7 +252,9 @@ export const brainstormTool: UnifiedTool = {
       }
     }
 
-    return result;
+    // Use backend-aware response prefix
+    const backendName = backend.name.charAt(0).toUpperCase() + backend.name.slice(1);
+    return `${backendName} response:\n${result.response}`;
   }
 };
 
