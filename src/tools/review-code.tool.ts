@@ -208,10 +208,12 @@ export const reviewCodeTool: UnifiedTool = {
         onProgress
       );
 
+      // Always track which backend was used
+      session.lastBackend = backendType;
+
       // Store Codex thread ID for native session resume
       if (backendResult.codexThreadId) {
         session.codexThreadId = backendResult.codexThreadId;
-        session.lastBackend = backendType;
         onProgress?.(`🔗 Codex thread: ${backendResult.codexThreadId.substring(0, 8)}...`);
       }
 
@@ -263,7 +265,7 @@ export const reviewCodeTool: UnifiedTool = {
       return formattedResponse;
     } catch (error) {
       Logger.error(`Review code execution error: ${error}`);
-      throw new Error(`Code review failed: ${error}`);
+      throw new Error(`Code review failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 };

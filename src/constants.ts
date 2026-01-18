@@ -220,12 +220,12 @@ export interface ToolArguments {
   // --> Backend selection (defaults to gemini)
   backend?: 'gemini' | 'codex';
 
-  // --> shared session parameters (ask-gemini, brainstorm, review-code)
+  // --> shared session parameters (ask, brainstorm, review-code)
   session?: string; // Session ID for conversation continuity
   includeHistory?: boolean; // Include conversation/review history in prompt
 
-  // --> tool permissions (ask-gemini)
-  allowedTools?: string[]; // Tools that Gemini can auto-approve (e.g., ["run_shell_command"])
+  // --> tool permissions (ask)
+  allowedTools?: string[]; // Tools that the AI backend can auto-approve (e.g., ["run_shell_command"])
 
   // --> brainstorm tool
   methodology?: string; // Brainstorming framework to use

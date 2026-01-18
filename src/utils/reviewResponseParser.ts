@@ -60,7 +60,7 @@ export function parseReviewResponse(
       comments.push(comment);
     }
 
-    Logger.debug(`Parsed ${matchCount} review comments from Gemini response`);
+    Logger.debug(`Parsed ${matchCount} review comments from response`);
 
     // If no structured comments found, try fallback parsing
     if (comments.length === 0) {
