@@ -59,9 +59,11 @@ export class CodexBackend implements BackendExecutor {
 
   getModels(): string[] {
     return [
-      CODEX_MODELS.O4_MINI,
-      CODEX_MODELS.O3,
-      CODEX_MODELS.GPT4_1,
+      CODEX_MODELS.GPT_5_2_CODEX,
+      CODEX_MODELS.GPT_5_1_CODEX_MINI,
+      CODEX_MODELS.GPT_5_1_CODEX_MAX,
+      CODEX_MODELS.GPT_5_2,
+      CODEX_MODELS.GPT_5_1,
     ];
   }
 

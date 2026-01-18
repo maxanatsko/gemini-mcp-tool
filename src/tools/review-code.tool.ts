@@ -67,7 +67,7 @@ const reviewCodeArgsSchema = z.object({
   model: z
     .string()
     .optional()
-    .describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'o4-mini', 'o3', 'gpt-4.1'"),
+    .describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'gpt-5.2-codex' (default), 'gpt-5.1-codex-mini', 'gpt-5.2'"),
   includeHistory: z
     .boolean()
     .default(true)

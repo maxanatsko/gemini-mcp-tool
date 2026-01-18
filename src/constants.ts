@@ -116,9 +116,16 @@ export const CODEX_CLI = {
 
 // Codex Models
 export const CODEX_MODELS = {
-  O4_MINI: 'o4-mini',
-  O3: 'o3',
-  GPT4_1: 'gpt-4.1',
+  // Recommended
+  GPT_5_2_CODEX: 'gpt-5.2-codex',      // Most advanced agentic coding model
+  GPT_5_1_CODEX_MINI: 'gpt-5.1-codex-mini', // Smaller, cost-effective
+  // Alternatives
+  GPT_5_1_CODEX_MAX: 'gpt-5.1-codex-max',  // Long-horizon agentic coding
+  GPT_5_2: 'gpt-5.2',                  // General agentic model
+  GPT_5_1: 'gpt-5.1',                  // Coding and agentic tasks
+  GPT_5_1_CODEX: 'gpt-5.1-codex',      // Long-running agentic coding
+  // Default (if not specified, Codex CLI uses its own default)
+  DEFAULT: 'gpt-5.2-codex',
 } as const;
 
 // Shared Session Management Constants
