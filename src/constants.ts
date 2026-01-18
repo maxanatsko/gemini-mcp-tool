@@ -82,6 +82,46 @@ export const CLI = {
   },
 } as const;
 
+// Backend Constants
+export const BACKENDS = {
+  GEMINI: 'gemini',  // Default backend
+  CODEX: 'codex',
+} as const;
+
+// Codex CLI Constants
+export const CODEX_CLI = {
+  COMMANDS: {
+    EXEC: 'exec',
+    RESUME: 'resume',
+  },
+  FLAGS: {
+    MODEL: '-m',
+    APPROVAL: '-a',
+    SANDBOX: '-s',
+    FULL_AUTO: '--full-auto',
+    JSON: '--json',
+    STDIN: '-',
+  },
+  APPROVAL_MODES: {
+    UNTRUSTED: 'untrusted',
+    ON_FAILURE: 'on-failure',
+    ON_REQUEST: 'on-request',
+    NEVER: 'never',
+  },
+  SANDBOX_MODES: {
+    READ_ONLY: 'read-only',
+    WORKSPACE_WRITE: 'workspace-write',
+    FULL_ACCESS: 'danger-full-access',
+  },
+} as const;
+
+// Codex Models
+export const CODEX_MODELS = {
+  O4_MINI: 'o4-mini',
+  O3: 'o3',
+  GPT4_1: 'gpt-4.1',
+} as const;
+
 // Shared Session Management Constants
 export const SESSION = {
   BASE_DIR: '.gemini-mcp/sessions', // Base directory in user's home
@@ -96,7 +136,12 @@ export const SESSION = {
       MAX_SESSIONS: 20,
       EVICTION_POLICY: 'fifo' as const
     },
-    'ask-gemini': {
+    'ask': {
+      TTL: 7 * 24 * 60 * 60 * 1000, // 7 days
+      MAX_SESSIONS: 50,
+      EVICTION_POLICY: 'lru' as const
+    },
+    'ask-gemini': { // Backward compatibility alias
       TTL: 7 * 24 * 60 * 60 * 1000, // 7 days
       MAX_SESSIONS: 50,
       EVICTION_POLICY: 'lru' as const
@@ -172,6 +217,9 @@ export interface ToolArguments {
   chunkIndex?: number | string; // Which chunk to return (1-based)
   chunkCacheKey?: string; // Optional cache key for continuation
   message?: string; // For Ping tool -- Un-used.
+
+  // --> Backend selection (defaults to gemini)
+  backend?: 'gemini' | 'codex';
 
   // --> shared session parameters (ask-gemini, brainstorm, review-code)
   session?: string; // Session ID for conversation continuity

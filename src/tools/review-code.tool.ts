@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { UnifiedTool } from './registry.js';
-import { executeGeminiCLI } from '../utils/geminiExecutor.js';
+import { getBackend, BackendType } from '../backends/index.js';
 import {
   getCurrentGitState,
   generateSessionId,
@@ -30,6 +30,10 @@ const reviewCodeArgsSchema = z.object({
     .string()
     .min(1)
     .describe('Review request or follow-up question'),
+  backend: z
+    .enum(['gemini', 'codex'])
+    .optional()
+    .describe("AI backend to use: 'gemini' (default) or 'codex'. Gemini offers 1M+ token context, Codex integrates with OpenAI models."),
   files: z
     .array(z.string())
     .optional()
@@ -60,7 +64,10 @@ const reviewCodeArgsSchema = z.object({
     )
     .optional()
     .describe('Responses to previous round\'s comments'),
-  model: z.string().optional().describe("Optional model: 'gemini-3-pro-preview' (default), 'gemini-3-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'"),
+  model: z
+    .string()
+    .optional()
+    .describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'o4-mini', 'o3', 'gpt-4.1'"),
   includeHistory: z
     .boolean()
     .default(true)
@@ -68,11 +75,11 @@ const reviewCodeArgsSchema = z.object({
   allowedTools: z
     .array(z.string())
     .optional()
-    .describe('Tools that Gemini can auto-approve without confirmation (e.g., [\'run_shell_command\']). Use sparingly for security.'),
+    .describe('Tools that AI can auto-approve without confirmation (e.g., [\'run_shell_command\']). Use sparingly for security.'),
   cwd: z
     .string()
     .optional()
-    .describe('Working directory for Gemini CLI execution. Use this to match your IDE workspace directory if you get \'Directory mismatch\' errors.')
+    .describe('Working directory for CLI execution. Use this to match your IDE workspace directory if you get \'Directory mismatch\' errors.')
 });
 
 export const reviewCodeTool: UnifiedTool = {
@@ -85,6 +92,7 @@ export const reviewCodeTool: UnifiedTool = {
   execute: async (args, onProgress) => {
     const {
       prompt,
+      backend: backendChoice,
       files,
       sessionId,
       forceNewSession,
@@ -176,19 +184,26 @@ export const reviewCodeTool: UnifiedTool = {
 
       Logger.debug(`Built review prompt (${reviewPrompt.length} chars)`);
 
-      // Step 6: Execute Gemini review
+      // Step 6: Execute review via selected backend
+      const backendType = (backendChoice as BackendType) || 'gemini';
+      const backend = await getBackend(backendType);
+
+      onProgress?.(`🤖 Using ${backend.name} backend...`);
       onProgress?.(
         `🔍 Round ${session.totalRounds + 1}: Reviewing ${files?.length || 'tracked'} file(s)...`
       );
 
-      const geminiResponse = await executeGeminiCLI(
+      const geminiResponse = await backend.execute(
         reviewPrompt,
-        model as string | undefined,
-        false, // sandbox
-        false, // changeMode - we parse manually
-        onProgress,
-        allowedTools as string[] | undefined,
-        cwd as string | undefined
+        {
+          provider: backendType,
+          model: model as string | undefined,
+          sandbox: false,
+          changeMode: false,
+          allowedTools: allowedTools as string[] | undefined,
+          cwd: cwd as string | undefined,
+        },
+        onProgress
       );
 
       // Step 7: Parse response into structured comments

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { UnifiedTool } from './registry.js';
 import { Logger } from '../utils/logger.js';
-import { executeGeminiCLI } from '../utils/geminiExecutor.js';
+import { getBackend, BackendType } from '../backends/index.js';
 import { brainstormSessionManager } from '../utils/brainstormSessionManager.js';
 
 function buildBrainstormPrompt(config: {
@@ -118,8 +118,9 @@ ${domain ? `Given the ${domain} domain, I'll apply the most effective combinatio
 
 const brainstormArgsSchema = z.object({
   prompt: z.string().min(1).describe("Primary brainstorming challenge or question to explore"),
+  backend: z.enum(['gemini', 'codex']).optional().describe("AI backend to use: 'gemini' (default) or 'codex'. Gemini offers 1M+ token context, Codex integrates with OpenAI models."),
   session: z.string().optional().describe("Session ID for tracking ideas across rounds (e.g., 'feature-ideas'). Enables iterative brainstorming with context."),
-  model: z.string().optional().describe("Optional model: 'gemini-3-pro-preview' (default), 'gemini-3-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'"),
+  model: z.string().optional().describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'o4-mini', 'o3', 'gpt-4.1'"),
   methodology: z.enum(['divergent', 'convergent', 'scamper', 'design-thinking', 'lateral', 'auto']).default('auto').describe("Brainstorming framework: 'divergent' (generate many ideas), 'convergent' (refine existing), 'scamper' (systematic triggers), 'design-thinking' (human-centered), 'lateral' (unexpected connections), 'auto' (AI selects best)"),
   domain: z.string().optional().describe("Domain context for specialized brainstorming (e.g., 'software', 'business', 'creative', 'research', 'product', 'marketing')"),
   constraints: z.string().optional().describe("Known limitations, requirements, or boundaries (budget, time, technical, legal, etc.)"),
@@ -127,8 +128,8 @@ const brainstormArgsSchema = z.object({
   ideaCount: z.number().int().positive().default(12).describe("Target number of ideas to generate (default: 10-15)"),
   includeAnalysis: z.boolean().default(true).describe("Include feasibility, impact, and implementation analysis for generated ideas"),
   includeHistory: z.boolean().default(true).describe("Include previously generated ideas in context (only applies when session is provided). Default: true"),
-  allowedTools: z.array(z.string()).optional().describe("Tools that Gemini can auto-approve without confirmation (e.g., ['run_shell_command']). Use sparingly for security."),
-  cwd: z.string().optional().describe("Working directory for Gemini CLI execution. Use this to match your IDE workspace directory if you get 'Directory mismatch' errors."),
+  allowedTools: z.array(z.string()).optional().describe("Tools that AI can auto-approve without confirmation (e.g., ['run_shell_command']). Use sparingly for security."),
+  cwd: z.string().optional().describe("Working directory for CLI execution. Use this to match your IDE workspace directory if you get 'Directory mismatch' errors."),
 });
 
 export const brainstormTool: UnifiedTool = {
@@ -142,6 +143,7 @@ export const brainstormTool: UnifiedTool = {
   execute: async (args, onProgress) => {
     const {
       prompt,
+      backend: backendChoice,
       session,
       model,
       methodology = 'auto',
@@ -201,11 +203,27 @@ export const brainstormTool: UnifiedTool = {
 
     Logger.debug(`Brainstorm: Using methodology '${methodology}' for domain '${domain || 'general'}'`);
 
+    // Get the appropriate backend (defaults to Gemini)
+    const backendType = (backendChoice as BackendType) || 'gemini';
+    const backend = await getBackend(backendType);
+
     // Report progress to user
+    onProgress?.(`🤖 Using ${backend.name} backend...`);
     onProgress?.(`Generating ${ideaCount} ideas via ${methodology} methodology...`);
 
-    // Execute with Gemini
-    const result = await executeGeminiCLI(enhancedPrompt, model as string | undefined, false, false, onProgress, allowedTools as string[] | undefined, cwd as string | undefined);
+    // Execute via the selected backend
+    const result = await backend.execute(
+      enhancedPrompt,
+      {
+        provider: backendType,
+        model: model as string | undefined,
+        sandbox: false,
+        changeMode: false,
+        allowedTools: allowedTools as string[] | undefined,
+        cwd: cwd as string | undefined,
+      },
+      onProgress
+    );
 
     // Save to session if provided
     if (session && sessionData) {
