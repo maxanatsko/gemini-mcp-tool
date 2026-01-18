@@ -16,6 +16,7 @@ const askArgsSchema = z.object({
   backend: z.enum(['gemini', 'codex']).optional().describe("AI backend to use: 'gemini' (default) or 'codex'. Gemini offers 1M+ token context, Codex integrates with OpenAI models."),
   session: z.string().optional().describe("Session ID for conversation continuity (e.g., 'typescript-learning'). Maintains context across multiple questions."),
   model: z.string().optional().describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'gpt-5.2-codex' (default), 'gpt-5.1-codex-mini', 'gpt-5.2'"),
+  reasoningEffort: z.enum(['low', 'medium', 'high', 'xhigh']).optional().describe("Reasoning effort level (Codex only): 'low', 'medium' (default), 'high', 'xhigh'. Use 'high'/'xhigh' for complex tasks."),
   sandbox: z.boolean().default(false).describe("Use sandbox mode to safely test code changes or run potentially risky operations in an isolated environment"),
   changeMode: z.boolean().default(false).describe("Enable structured change mode - formats prompts to prevent tool errors and returns structured edit suggestions that Claude can apply directly"),
   includeHistory: z.boolean().default(true).describe("Include conversation history in context (only applies when session is provided). Default: true"),
@@ -37,6 +38,7 @@ export const askTool: UnifiedTool = {
       backend: backendChoice,
       session,
       model,
+      reasoningEffort,
       sandbox,
       changeMode,
       includeHistory,
@@ -88,6 +90,7 @@ export const askTool: UnifiedTool = {
         allowedTools: allowedTools as string[] | undefined,
         cwd: cwd as string | undefined,
         codexThreadId: sessionData?.codexThreadId, // For Codex native session resume
+        reasoningEffort: reasoningEffort as 'low' | 'medium' | 'high' | 'xhigh' | undefined,
       },
       onProgress
     );

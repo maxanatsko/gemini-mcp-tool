@@ -128,6 +128,7 @@ const brainstormArgsSchema = z.object({
   ideaCount: z.number().int().positive().default(12).describe("Target number of ideas to generate (default: 10-15)"),
   includeAnalysis: z.boolean().default(true).describe("Include feasibility, impact, and implementation analysis for generated ideas"),
   includeHistory: z.boolean().default(true).describe("Include previously generated ideas in context (only applies when session is provided). Default: true"),
+  reasoningEffort: z.enum(['low', 'medium', 'high', 'xhigh']).optional().describe("Reasoning effort level (Codex only): 'low', 'medium' (default), 'high', 'xhigh'. Use 'high'/'xhigh' for complex tasks."),
   allowedTools: z.array(z.string()).optional().describe("Tools that AI can auto-approve without confirmation (e.g., ['run_shell_command']). Use sparingly for security."),
   cwd: z.string().optional().describe("Working directory for CLI execution. Use this to match your IDE workspace directory if you get 'Directory mismatch' errors."),
 });
@@ -153,6 +154,7 @@ export const brainstormTool: UnifiedTool = {
       ideaCount = 12,
       includeAnalysis = true,
       includeHistory = true,
+      reasoningEffort,
       allowedTools,
       cwd
     } = args;
@@ -223,6 +225,7 @@ export const brainstormTool: UnifiedTool = {
         allowedTools: allowedTools as string[] | undefined,
         cwd: cwd as string | undefined,
         codexThreadId: sessionData?.codexThreadId, // For Codex native session resume
+        reasoningEffort: reasoningEffort as 'low' | 'medium' | 'high' | 'xhigh' | undefined,
       },
       onProgress
     );

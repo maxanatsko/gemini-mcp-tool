@@ -100,6 +100,7 @@ export const CODEX_CLI = {
     FULL_AUTO: '--full-auto',
     JSON: '--json',
     STDIN: '-',
+    REASONING_EFFORT: '--reasoning-effort',
   },
   APPROVAL_MODES: {
     UNTRUSTED: 'untrusted',
@@ -111,6 +112,12 @@ export const CODEX_CLI = {
     READ_ONLY: 'read-only',
     WORKSPACE_WRITE: 'workspace-write',
     FULL_ACCESS: 'danger-full-access',
+  },
+  REASONING_EFFORT: {
+    LOW: 'low',
+    MEDIUM: 'medium',      // Default, recommended for most tasks
+    HIGH: 'high',
+    XHIGH: 'xhigh',        // Extra high, for hardest tasks
   },
 } as const;
 

@@ -107,6 +107,11 @@ export class CodexBackend implements BackendExecutor {
       args.push(CODEX_CLI.FLAGS.SANDBOX, CODEX_CLI.SANDBOX_MODES.WORKSPACE_WRITE);
     }
 
+    // Reasoning effort (defaults to medium if not specified)
+    if (config.reasoningEffort) {
+      args.push(CODEX_CLI.FLAGS.REASONING_EFFORT, config.reasoningEffort);
+    }
+
     // Enable JSON output to capture thread_id
     args.push(CODEX_CLI.FLAGS.JSON);
 

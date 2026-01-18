@@ -68,6 +68,10 @@ const reviewCodeArgsSchema = z.object({
     .string()
     .optional()
     .describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'gpt-5.2-codex' (default), 'gpt-5.1-codex-mini', 'gpt-5.2'"),
+  reasoningEffort: z
+    .enum(['low', 'medium', 'high', 'xhigh'])
+    .optional()
+    .describe("Reasoning effort level (Codex only): 'low', 'medium' (default), 'high', 'xhigh'. Use 'high'/'xhigh' for complex tasks."),
   includeHistory: z
     .boolean()
     .default(true)
@@ -100,6 +104,7 @@ export const reviewCodeTool: UnifiedTool = {
       severity,
       commentDecisions,
       model,
+      reasoningEffort,
       includeHistory,
       allowedTools,
       cwd
@@ -204,6 +209,7 @@ export const reviewCodeTool: UnifiedTool = {
           allowedTools: allowedTools as string[] | undefined,
           cwd: cwd as string | undefined,
           codexThreadId: session.codexThreadId, // For Codex native session resume
+          reasoningEffort: reasoningEffort as 'low' | 'medium' | 'high' | 'xhigh' | undefined,
         },
         onProgress
       );
