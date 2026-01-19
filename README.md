@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
-│   Model Context Protocol server for Google Gemini CLI           │
+│   Model Context Protocol server for Gemini CLI + Codex CLI      │
 │                                                                 │
 │   Claude ──────────────── Gemini                                │
 │                                                                 │
@@ -153,7 +153,8 @@ use gemini sandbox to install numpy
 
 | Tool | Description |
 |:-----|:------------|
-| `ask-gemini` | Query Gemini with `@` file references |
+| `ask` | Query Gemini or Codex with `@` file references |
+| `ask-gemini` | Backward-compatible alias for `ask` |
 | `brainstorm` | Creative ideation with frameworks |
 | `review-code` | Interactive code review sessions |
 | `ping` | Connection test |
@@ -165,13 +166,17 @@ use gemini sandbox to install numpy
 
 <br>
 
-**ask-gemini**
+**ask** (or `ask-gemini`)
 
 ```
 prompt      Required    Analysis request with @ syntax
-model       Optional    gemini-2.5-pro (default)
-sandbox     Optional    Safe code execution
+backend     Optional    gemini (default) | codex
+model       Optional    Backend-specific override
+reasoningEffort Optional Codex-only: low|medium|high|xhigh
+sandbox     Optional    Gemini sandbox / Codex workspace-write
+sandboxMode Optional    Codex-only: read-only|workspace-write|danger-full-access
 session     Optional    Conversation continuity
+includeHistory Optional Include previous rounds
 changeMode  Optional    Structured edit suggestions
 ```
 

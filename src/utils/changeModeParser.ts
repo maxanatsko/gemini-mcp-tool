@@ -9,11 +9,12 @@ export interface ChangeModeEdit {
 }
 
 /**
- * Safely parses a line number string, returning 0 for invalid values
+ * Safely parses a 1-based line number string.
+ * Returns -1 for invalid values so validation can fail fast.
  */
 function parseLineNumber(value: string): number {
   const parsed = parseInt(value, 10);
-  return !isNaN(parsed) && parsed >= 0 ? parsed : 0;
+  return !isNaN(parsed) && parsed >= 1 ? parsed : -1;
 }
 
 export function parseChangeModeOutput(responseText: string): ChangeModeEdit[] {
@@ -91,6 +92,14 @@ export function validateChangeModeEdits(edits: ChangeModeEdit[]): {
   for (const edit of edits) {
     if (!edit.filename) {
       errors.push('Edit missing filename');
+    }
+
+    if (edit.oldStartLine < 1) {
+      errors.push(`Invalid old start line for ${edit.filename}: ${edit.oldStartLine}`);
+    }
+
+    if (edit.newStartLine < 1) {
+      errors.push(`Invalid new start line for ${edit.filename}: ${edit.newStartLine}`);
     }
 
     if (edit.oldStartLine > edit.oldEndLine) {

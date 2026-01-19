@@ -7,11 +7,12 @@
  */
 
 import { spawn } from 'child_process';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
+import { constants as fsConstants } from 'fs';
 import * as path from 'path';
 import { BackendExecutor, BackendConfig, BackendType, BackendResult } from './types.js';
 import { Logger } from '../utils/logger.js';
-import { CODEX_CLI, CODEX_MODELS } from '../constants.js';
+import { CODEX_CLI, CODEX_FILE_REF, CODEX_MODELS, ERROR_MESSAGES } from '../constants.js';
 
 /** Parsed result from Codex JSON output */
 interface CodexJsonResult {
@@ -28,7 +29,7 @@ export class CodexBackend implements BackendExecutor {
     onProgress?: (output: string) => void
   ): Promise<BackendResult> {
     // Translate @file references to inline content since Codex doesn't support them
-    const processedPrompt = this.translateFileRefs(prompt, config.cwd);
+    const processedPrompt = await this.translateFileRefs(prompt, config.cwd);
 
     // Apply changeMode instructions if enabled
     const finalPrompt = config.changeMode
@@ -44,7 +45,7 @@ export class CodexBackend implements BackendExecutor {
     return {
       response: result.response,
       backend: this.name,
-      model: config.model,
+      model: config.model ?? CODEX_MODELS.DEFAULT,
       codexThreadId: result.threadId,
     };
   }
@@ -101,12 +102,15 @@ export class CodexBackend implements BackendExecutor {
     }
 
     // Sandbox mode
-    if (config.sandbox === false) {
-      Logger.warn('⚠️ SECURITY: Full filesystem access enabled - potential for data loss or security issues');
-      args.push(CODEX_CLI.FLAGS.SANDBOX, CODEX_CLI.SANDBOX_MODES.FULL_ACCESS);
-    } else {
-      args.push(CODEX_CLI.FLAGS.SANDBOX, CODEX_CLI.SANDBOX_MODES.WORKSPACE_WRITE);
+    const sandboxMode =
+      config.sandboxMode ??
+      (config.sandbox ? CODEX_CLI.SANDBOX_MODES.WORKSPACE_WRITE : CODEX_CLI.SANDBOX_MODES.READ_ONLY);
+
+    if (sandboxMode === CODEX_CLI.SANDBOX_MODES.FULL_ACCESS) {
+      Logger.warn('⚠️ SECURITY: Codex full filesystem access enabled (danger-full-access)');
     }
+
+    args.push(CODEX_CLI.FLAGS.SANDBOX, sandboxMode);
 
     // Reasoning effort (defaults to medium if not specified)
     if (config.reasoningEffort) {
@@ -142,8 +146,10 @@ export class CodexBackend implements BackendExecutor {
    * Handles paths with dots, slashes, dashes, underscores, and relative paths like @../src/file.ts
    * Includes path traversal protection to prevent reading files outside workspace
    */
-  private translateFileRefs(prompt: string, cwd?: string): string {
+  private async translateFileRefs(prompt: string, cwd?: string): Promise<string> {
     const workingDir = cwd || process.cwd();
+    const lexicalWorkDir = path.resolve(workingDir);
+    const canonicalWorkDir = await fs.realpath(workingDir).catch(() => lexicalWorkDir);
     // Match @file references - handles:
     // - Relative paths: @../src/file.ts, @./file.ts
     // - Absolute paths: @/home/user/file.ts
@@ -160,86 +166,151 @@ export class CodexBackend implements BackendExecutor {
     const deniedFiles: string[] = [];
 
     // Max file size: 10MB to prevent memory exhaustion
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    let totalInlinedBytes = 0;
+    const alreadyProcessedRefs = new Set<string>();
+    const alreadyProcessedTargets = new Map<string, string>();
 
     for (const ref of fileRefs) {
       const filePath = ref.substring(1); // Remove @ prefix
+
+      // Avoid re-reading/re-inlining the same @reference multiple times.
+      // Replace duplicates with a small pointer to the first inlined instance.
+      if (alreadyProcessedRefs.has(ref)) {
+        translated = translated.replace(
+          ref,
+          `\n--- Duplicate @reference: ${filePath} (see earlier in prompt) ---\n`
+        );
+        continue;
+      }
+      alreadyProcessedRefs.add(ref);
+
       const absolutePath = path.isAbsolute(filePath)
         ? filePath
         : path.join(workingDir, filePath);
 
-      // Resolve to get the real path (follows symlinks and resolves . and ..)
-      let resolvedPath: string;
-      try {
-        resolvedPath = fs.realpathSync(absolutePath);
-      } catch {
-        // File doesn't exist - use path.resolve for basic path normalization
-        // But only allow if the normalized path stays within workspace
-        resolvedPath = path.resolve(absolutePath);
-
-        // Extra security: if file doesn't exist and path contains .., deny access
-        // This prevents potential TOCTOU attacks where file is created after check
-        if (filePath.includes('..')) {
-          deniedFiles.push(filePath);
-          Logger.warn(`Path traversal blocked for non-existent path with ..: ${filePath}`);
-          translated = translated.replace(ref, `[Access denied: path traversal not allowed]`);
-          continue;
-        }
-      }
+      // Resolve for basic path normalization (does not follow symlinks)
+      const resolvedPath = path.resolve(absolutePath);
 
       // Security check: Ensure path is within workspace
-      if (!this.isPathWithinWorkspace(resolvedPath, workingDir)) {
+      if (!this.isPathWithinWorkspace(resolvedPath, lexicalWorkDir)) {
         deniedFiles.push(filePath);
         Logger.warn(`Path traversal blocked for @reference: ${filePath} (resolved to ${resolvedPath})`);
-        translated = translated.replace(ref, `[Access denied: ${filePath} is outside workspace]`);
+        translated = translated.replace(ref, `${ERROR_MESSAGES.ACCESS_DENIED_OUTSIDE_WORKSPACE} (${filePath})`);
         continue;
       }
 
       try {
-        if (fs.existsSync(absolutePath)) {
-          const stat = fs.statSync(absolutePath);
-
-          // Check for symlinks pointing outside workspace
-          if (stat.isSymbolicLink && stat.isSymbolicLink()) {
-            const realPath = fs.realpathSync(absolutePath);
-            if (!this.isPathWithinWorkspace(realPath, workingDir)) {
-              deniedFiles.push(filePath);
-              Logger.warn(`Symlink traversal blocked for @reference: ${filePath}`);
-              translated = translated.replace(ref, `[Access denied: symlink points outside workspace]`);
-              continue;
-            }
+        try {
+          await fs.access(absolutePath, fsConstants.F_OK);
+        } catch {
+          // Extra security: if file doesn't exist and path contains .., deny access.
+          // This prevents potential TOCTOU attacks where file is created after check.
+          if (filePath.includes('..')) {
+            deniedFiles.push(filePath);
+            Logger.warn(`Path traversal blocked for non-existent path with ..: ${filePath}`);
+            translated = translated.replace(ref, ERROR_MESSAGES.ACCESS_DENIED_PATH_TRAVERSAL);
+            continue;
           }
 
-          if (stat.isDirectory()) {
-            // For directories, list files but don't inline all content
-            const files = fs.readdirSync(absolutePath);
-            translated = translated.replace(
-              ref,
-              `\n--- Directory: ${filePath} ---\nFiles: ${files.join(', ')}\n--- end directory ---\n`
-            );
-          } else {
-            // Check file size before reading
-            if (stat.size > MAX_FILE_SIZE) {
-              Logger.warn(`File too large for @reference: ${filePath} (${(stat.size / 1024 / 1024).toFixed(2)}MB > 10MB limit)`);
-              translated = translated.replace(ref, `[File too large: ${filePath} (${(stat.size / 1024 / 1024).toFixed(2)}MB exceeds 10MB limit)]`);
-              continue;
-            }
-
-            const content = fs.readFileSync(absolutePath, 'utf-8');
-            translated = translated.replace(
-              ref,
-              `\n--- File: ${filePath} ---\n${content}\n--- end file: ${filePath} ---\n`
-            );
-          }
-        } else {
           missingFiles.push(filePath);
           Logger.warn(`File not found for @reference: ${filePath}`);
-          translated = translated.replace(ref, `[File not found: ${filePath}]`);
+          translated = translated.replace(ref, `${ERROR_MESSAGES.FILE_NOT_FOUND}: ${filePath}`);
+          continue;
         }
+
+        // Canonicalize to prevent parent-directory symlink traversal (e.g., workspace/subdir -> /etc)
+        const canonicalTargetPath = await fs.realpath(absolutePath);
+        const isSymlinkedPath =
+          path.normalize(canonicalTargetPath) !== path.normalize(path.resolve(absolutePath));
+
+        if (!this.isPathWithinWorkspace(canonicalTargetPath, canonicalWorkDir)) {
+          deniedFiles.push(filePath);
+          Logger.warn(
+            `Symlink traversal blocked for @reference: ${filePath} (realpath: ${canonicalTargetPath})`
+          );
+          translated = translated.replace(
+            ref,
+            `${isSymlinkedPath ? ERROR_MESSAGES.ACCESS_DENIED_SYMLINK_OUTSIDE_WORKSPACE : ERROR_MESSAGES.ACCESS_DENIED_OUTSIDE_WORKSPACE} (${filePath})`
+          );
+          continue;
+        }
+
+        if (alreadyProcessedTargets.has(canonicalTargetPath)) {
+          translated = translated.replace(
+            ref,
+            `\n--- Duplicate @reference: ${filePath} (see earlier in prompt) ---\n`
+          );
+          continue;
+        }
+
+        const stat = await fs.stat(canonicalTargetPath);
+
+        if (stat.isDirectory()) {
+          // For directories, list files but don't inline all content (bounded)
+          const fileNames: string[] = [];
+          let truncated = false;
+          const dir = await fs.opendir(canonicalTargetPath);
+          try {
+            while (true) {
+              const dirent = await dir.read();
+              if (!dirent) break;
+
+              if (fileNames.length < CODEX_FILE_REF.MAX_DIR_ENTRIES) {
+                fileNames.push(dirent.name);
+                continue;
+              }
+
+              truncated = true;
+              break;
+            }
+          } finally {
+            await dir.close();
+          }
+
+          const suffix = truncated ? `, ... (showing first ${CODEX_FILE_REF.MAX_DIR_ENTRIES})` : '';
+          const directoryListing = `\n--- Directory: ${filePath} ---\nFiles: ${fileNames.join(', ')}${suffix}\n--- end directory ---\n`;
+
+          const listingBytes = Buffer.byteLength(directoryListing, 'utf8');
+          if (totalInlinedBytes + listingBytes > CODEX_FILE_REF.MAX_TOTAL_BYTES) {
+            Logger.warn(`Inline limit reached while listing directory: ${filePath}`);
+            translated = translated.replace(ref, `${ERROR_MESSAGES.INLINE_LIMIT_REACHED}: ${filePath}`);
+            continue;
+          }
+
+          totalInlinedBytes += listingBytes;
+          alreadyProcessedTargets.set(canonicalTargetPath, directoryListing);
+          translated = translated.replace(ref, directoryListing);
+          continue;
+        }
+
+        // Check file size before reading
+        if (stat.size > CODEX_FILE_REF.MAX_FILE_BYTES) {
+          Logger.warn(
+            `File too large for @reference: ${filePath} (${(stat.size / 1024 / 1024).toFixed(2)}MB > 10MB limit)`
+          );
+          translated = translated.replace(
+            ref,
+            `${ERROR_MESSAGES.FILE_TOO_LARGE}: ${filePath} (${(stat.size / 1024 / 1024).toFixed(2)}MB exceeds 10MB limit)`
+          );
+          continue;
+        }
+
+        if (totalInlinedBytes + stat.size > CODEX_FILE_REF.MAX_TOTAL_BYTES) {
+          Logger.warn(`Inline limit reached; skipping file: ${filePath} (${stat.size} bytes)`);
+          translated = translated.replace(ref, `${ERROR_MESSAGES.INLINE_LIMIT_REACHED}: ${filePath}`);
+          continue;
+        }
+
+        const content = await fs.readFile(canonicalTargetPath, 'utf-8');
+        const fileBlock = `\n--- File: ${filePath} ---\n${content}\n--- end file: ${filePath} ---\n`;
+        totalInlinedBytes += stat.size;
+
+        alreadyProcessedTargets.set(canonicalTargetPath, fileBlock);
+        translated = translated.replace(ref, fileBlock);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         Logger.error(`Error reading file ${filePath}: ${errMsg}`);
-        translated = translated.replace(ref, `[Error reading file: ${filePath}]`);
+        translated = translated.replace(ref, `${ERROR_MESSAGES.ERROR_READING_FILE}: ${filePath}`);
       }
     }
 

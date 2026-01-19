@@ -4,7 +4,7 @@ import { getBackend, BackendType } from '../backends/index.js';
 import { processChangeModeOutput } from '../utils/geminiExecutor.js';
 import {
   ERROR_MESSAGES,
-  STATUS_MESSAGES,
+  CODEX_MODELS,
   MODELS
 } from '../constants.js';
 import { askSessionManager } from '../utils/askSessionManager.js';
@@ -17,7 +17,8 @@ const askArgsSchema = z.object({
   session: z.string().optional().describe("Session ID for conversation continuity (e.g., 'typescript-learning'). Maintains context across multiple questions."),
   model: z.string().optional().describe("Model override. Gemini: 'gemini-3-pro-preview' (default), 'gemini-2.5-pro'. Codex: 'gpt-5.2-codex' (default), 'gpt-5.1-codex-mini', 'gpt-5.2'"),
   reasoningEffort: z.enum(['low', 'medium', 'high', 'xhigh']).optional().describe("Reasoning effort level (Codex only): 'low', 'medium' (default), 'high', 'xhigh'. Use 'high'/'xhigh' for complex tasks."),
-  sandbox: z.boolean().default(false).describe("Use sandbox mode to safely test code changes or run potentially risky operations in an isolated environment"),
+  sandbox: z.boolean().default(false).describe("Sandbox (Gemini) / workspace-write (Codex). For Codex: false => read-only (default), true => workspace-write. Ignored if sandboxMode is set."),
+  sandboxMode: z.enum(['read-only', 'workspace-write', 'danger-full-access']).optional().describe("Codex-only override for sandbox policy (takes precedence over sandbox). Use 'danger-full-access' only with explicit opt-in."),
   changeMode: z.boolean().default(false).describe("Enable structured change mode - formats prompts to prevent tool errors and returns structured edit suggestions that Claude can apply directly"),
   includeHistory: z.boolean().default(true).describe("Include conversation history in context (only applies when session is provided). Default: true"),
   allowedTools: z.array(z.string()).optional().describe("Tools that the AI can auto-approve without confirmation (e.g., ['run_shell_command'] for git commands). Use sparingly for security."),
@@ -40,6 +41,7 @@ export const askTool: UnifiedTool = {
       model,
       reasoningEffort,
       sandbox,
+      sandboxMode,
       changeMode,
       includeHistory,
       allowedTools,
@@ -86,6 +88,7 @@ export const askTool: UnifiedTool = {
         provider: backendType,
         model: model as string | undefined,
         sandbox: !!sandbox,
+        sandboxMode: sandboxMode as 'read-only' | 'workspace-write' | 'danger-full-access' | undefined,
         changeMode: !!changeMode,
         allowedTools: allowedTools as string[] | undefined,
         cwd: cwd as string | undefined,
@@ -100,7 +103,10 @@ export const askTool: UnifiedTool = {
       try {
         const contextFiles = extractFilesFromPrompt(prompt as string);
         // Use model from backend result (actual model used), fallback to input or default
-        const usedModel = result.model || (model as string) || MODELS.PRO_3;
+        const usedModel =
+          result.model ||
+          (model as string) ||
+          (backendType === 'codex' ? CODEX_MODELS.DEFAULT : MODELS.PRO_3);
         askSessionManager.addRound(
           sessionData,
           prompt as string,
@@ -133,5 +139,9 @@ export const askTool: UnifiedTool = {
   }
 };
 
-// Backward compatibility: Export askGeminiTool as an alias
-export const askGeminiTool = askTool;
+// Backward compatibility: register as a separate tool name
+export const askGeminiTool: UnifiedTool = {
+  ...askTool,
+  name: 'ask-gemini',
+  description: "Backward-compatible alias for 'ask'.",
+};

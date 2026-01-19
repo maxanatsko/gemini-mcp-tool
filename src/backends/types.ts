@@ -8,6 +8,11 @@ export interface BackendConfig {
   provider: BackendType;
   model?: string;
   sandbox?: boolean;
+  /**
+   * Sandbox mode for backends that support granular policies (Codex).
+   * If not provided, the backend chooses a safe default.
+   */
+  sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access';
   changeMode?: boolean;
   allowedTools?: string[];
   cwd?: string;

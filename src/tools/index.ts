@@ -9,6 +9,7 @@ import { reviewCodeTool } from './review-code.tool.js';
 // askTool is the new name, askGeminiTool is an alias for backward compatibility
 toolRegistry.push(
   askTool,
+  askGeminiTool,
   brainstormTool,
   timeoutTestTool,
   reviewCodeTool

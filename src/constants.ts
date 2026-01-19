@@ -9,6 +9,14 @@ export const ERROR_MESSAGES = {
   QUOTA_EXCEEDED_SHORT: "⚠️ Gemini 2.5 Pro daily quota exceeded. Please retry with model: 'gemini-2.5-flash'",
   TOOL_NOT_FOUND: "not found in registry",
   NO_PROMPT_PROVIDED: "Please provide a prompt for analysis. Use @ syntax to include files (e.g., '@largefile.js explain what this does') or ask general questions",
+  // Codex @file inlining (translateFileRefs)
+  ACCESS_DENIED_PATH_TRAVERSAL: "[Access denied: path traversal not allowed]",
+  ACCESS_DENIED_OUTSIDE_WORKSPACE: "[Access denied: path is outside workspace]",
+  ACCESS_DENIED_SYMLINK_OUTSIDE_WORKSPACE: "[Access denied: symlink points outside workspace]",
+  FILE_TOO_LARGE: "[File too large]",
+  FILE_NOT_FOUND: "[File not found]",
+  ERROR_READING_FILE: "[Error reading file]",
+  INLINE_LIMIT_REACHED: "[Inline limit reached]",
 } as const;
 
 // Status messages
@@ -119,6 +127,12 @@ export const CODEX_CLI = {
     HIGH: 'high',
     XHIGH: 'xhigh',        // Extra high, for hardest tasks
   },
+} as const;
+
+export const CODEX_FILE_REF = {
+  MAX_FILE_BYTES: 10 * 1024 * 1024, // 10MB
+  MAX_TOTAL_BYTES: 20 * 1024 * 1024, // 20MB total inlined content
+  MAX_DIR_ENTRIES: 200, // Prevent huge directory listings
 } as const;
 
 // Codex Models

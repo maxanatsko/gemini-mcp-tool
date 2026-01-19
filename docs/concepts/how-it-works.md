@@ -4,7 +4,7 @@
 
 The gemini-mcp-tool is designed to seamlessly integrate into your natural workflow with your preferred MCP compliant AI clients, achieved through carefully crafted tools and pipelines.
 
-Claude automatically decides when to use `ask-gemini` based on context:
+Claude automatically decides when to use `ask` (alias: `ask-gemini`) based on context:
 
 - `🔍 comparative analysis` - different AI perspectives for validation
 - `🛠️ leveraging extra tools` - Gemini's search and memory functions  
@@ -13,7 +13,7 @@ Claude automatically decides when to use `ask-gemini` based on context:
 
 This intelligent selection enhances your workflow exactly when Gemini's capabilities add value.
 
-<div align="center">⇣ when ask-gemini gets called ↴</div>
+<div align="center">⇣ when ask gets called ↴</div>
 <DiagramModal>
 
 ```mermaid
@@ -27,8 +27,8 @@ flowchart LR
     subgraph main
         direction TB
         A[You] --> |"ask gemini..."| B([**Claude**])
-        B -..-> |"invokes 'ask-gemini'"| C["Gemini-MCP-Tool"]
-        C --> |"spawn!"| D[Gemini-CLI]
+        B -..-> |"invokes 'ask'"| C["Gemini-MCP-Tool"]
+        C --> |"spawn backend CLI"| D[Gemini-CLI / Codex-CLI]
         D e1@-.-> |"response"| C
         C -.-> |"response"| B
         B -.-> |"summary response"| A

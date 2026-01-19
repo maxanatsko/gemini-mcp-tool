@@ -22,7 +22,6 @@ import {
   formatSessionNotFound,
   formatGitStateWarning
 } from '../utils/reviewFormatter.js';
-import { STATUS_MESSAGES } from '../constants.js';
 import { Logger } from '../utils/logger.js';
 
 const reviewCodeArgsSchema = z.object({

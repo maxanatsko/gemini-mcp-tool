@@ -51,6 +51,11 @@ const DEFAULT_CONFIGS: Record<string, Partial<SessionConfig>> = {
     maxSessions: 20,
     evictionPolicy: 'lru' // Changed from 'fifo' to 'lru' for consistency
   },
+  'ask': {
+    ttl: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxSessions: 50,
+    evictionPolicy: 'lru'
+  },
   'ask-gemini': {
     ttl: 7 * 24 * 60 * 60 * 1000, // 7 days
     maxSessions: 50,
