@@ -1,4 +1,4 @@
-# Gemini MCP Tool
+# AI CLI MCP Server
 
 <br>
 
@@ -7,17 +7,17 @@
 │                                                                 │
 │   Model Context Protocol server for Gemini CLI + Codex CLI      │
 │                                                                 │
-│   Claude ──────────────── Gemini                                │
+│   Claude ──────────── Gemini / Codex                            │
 │                                                                 │
-│   Leverage Gemini's massive token window                        │
-│   for large file and codebase analysis                          │
+│   Leverage Gemini's massive token window or Codex's             │
+│   advanced reasoning for large file and codebase analysis       │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 <br>
 
-**Version** `2.1.0`
+**Version** `3.0.0`
 **License** `MIT`
 
 ---
@@ -44,7 +44,7 @@ Google Gemini CLI (configured)
 ### Recommended
 
 ```bash
-claude mcp add gemini-cli -- npx -y maxanatsko/gemini-mcp-tool
+claude mcp add ai-cli -- npx -y @maxanatsko/ai-cli-mcp-server
 ```
 
 <br>
@@ -52,14 +52,14 @@ claude mcp add gemini-cli -- npx -y maxanatsko/gemini-mcp-tool
 ### Local Development
 
 ```bash
-git clone https://github.com/maxanatsko/gemini-mcp-tool.git
-cd gemini-mcp-tool
+git clone https://github.com/maxanatsko/ai-cli-mcp-server.git
+cd ai-cli-mcp-server
 
 npm install
 npm run build
 npm link
 
-claude mcp add gemini-cli -- gemini-mcp
+claude mcp add ai-cli -- ai-cli-mcp
 ```
 
 <br>
@@ -85,9 +85,9 @@ claude mcp add gemini-cli -- gemini-mcp
 ```json
 {
   "mcpServers": {
-    "gemini-cli": {
+    "ai-cli": {
       "command": "npx",
-      "args": ["-y", "maxanatsko/gemini-mcp-tool"]
+      "args": ["-y", "@maxanatsko/ai-cli-mcp-server"]
     }
   }
 }
@@ -190,9 +190,9 @@ changeMode  Optional    Structured edit suggestions
 
 <br>
 
-[Documentation](https://jamubc.github.io/gemini-mcp-tool/)
+[Documentation](https://maxanatsko.github.io/ai-cli-mcp-server/)
 [Original Project](https://github.com/jamubc/gemini-mcp-tool)
-[This Fork](https://github.com/maxanatsko/gemini-mcp-tool)
+[This Fork](https://github.com/maxanatsko/ai-cli-mcp-server)
 
 <br>
 

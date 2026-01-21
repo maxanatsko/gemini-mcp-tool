@@ -90,6 +90,12 @@ export const reviewCodeTool: UnifiedTool = {
   description:
     'Interactive code review with session continuity. Auto-detects git state for session management. Maintains conversation history and tracks review decisions across iterations.',
   zodSchema: reviewCodeArgsSchema,
+  annotations: {
+    readOnlyHint: true,      // Only reads files and git state
+    destructiveHint: false,  // Doesn't modify or delete data
+    idempotentHint: false,   // Same input yields different AI responses
+    openWorldHint: true,     // Interacts with external AI APIs
+  },
   category: 'ai',
 
   execute: async (args, onProgress) => {

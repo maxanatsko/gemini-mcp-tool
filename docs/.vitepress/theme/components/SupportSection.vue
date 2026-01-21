@@ -9,13 +9,13 @@
     <div class="support-content">
       <div class="support-header">
         <div class="support-text">
-          <h3 class="support-title">Support Gemini MCP Tool</h3>
+          <h3 class="support-title">Support AI CLI MCP Server</h3>
           <p class="support-description">
-            Does gemini-mcp-tool help you?<br><br>Your support helps maintain & improve this open source project.
+            Does AI CLI MCP Server help you?<br><br>Your support helps maintain & improve this open source project.
           </p>
         </div>
-        <a 
-          href="/gemini-mcp-tool/funding" 
+        <a
+          href="/ai-cli-mcp-server/funding" 
           class="transparency-link"
           @mouseenter="handleMouseEnter"
           @mousemove="handleMouseMove"

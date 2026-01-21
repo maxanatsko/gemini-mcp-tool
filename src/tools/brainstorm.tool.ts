@@ -137,6 +137,12 @@ export const brainstormTool: UnifiedTool = {
   name: "brainstorm",
   description: "Generate novel ideas with dynamic context gathering. --> Creative frameworks (SCAMPER, Design Thinking, etc.), domain context integration, idea clustering, feasibility analysis, and iterative refinement.",
   zodSchema: brainstormArgsSchema,
+  annotations: {
+    readOnlyHint: false,     // Can modify state via sessions
+    destructiveHint: false,  // Doesn't delete data
+    idempotentHint: false,   // Same input yields different AI responses
+    openWorldHint: true,     // Interacts with external AI APIs
+  },
   prompt: {
     description: "Generate structured brainstorming prompt with methodology-driven ideation, domain context integration, and analytical evaluation framework",
   },

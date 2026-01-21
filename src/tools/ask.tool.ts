@@ -29,6 +29,12 @@ export const askTool: UnifiedTool = {
   name: "ask",
   description: "Query AI with file analysis, session continuity, and dual-backend support (Gemini/Codex). Use backend:'codex' for OpenAI, defaults to Gemini.",
   zodSchema: askArgsSchema,
+  annotations: {
+    readOnlyHint: false,     // Can modify state via sessions
+    destructiveHint: false,  // Doesn't delete data
+    idempotentHint: false,   // Same input may yield different AI responses
+    openWorldHint: true,     // Interacts with external AI APIs
+  },
   prompt: {
     description: "Execute AI query with optional file references, session management, and backend selection.",
   },

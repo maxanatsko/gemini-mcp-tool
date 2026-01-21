@@ -135,6 +135,11 @@ export const CODEX_FILE_REF = {
   MAX_DIR_ENTRIES: 200, // Prevent huge directory listings
 } as const;
 
+export const CODEX_OUTPUT = {
+  MAX_OUTPUT_SIZE: 10 * 1024 * 1024, // 10MB max output to prevent memory exhaustion
+  MAX_JSONL_LINES: 10000, // Maximum JSONL lines to parse
+} as const;
+
 // Codex Models
 export const CODEX_MODELS = {
   // Recommended
@@ -151,7 +156,7 @@ export const CODEX_MODELS = {
 
 // Shared Session Management Constants
 export const SESSION = {
-  BASE_DIR: '.gemini-mcp/sessions', // Base directory in user's home
+  BASE_DIR: '.ai-cli-mcp/sessions', // Base directory in user's home
   DEFAULT_TTL: 24 * 60 * 60 * 1000, // 24 hours default
   DEFAULT_MAX_SESSIONS: 20,
   DEFAULT_EVICTION_POLICY: 'lru' as const,
@@ -187,7 +192,7 @@ export const REVIEW = {
   SESSION: {
     TTL: 60 * 60 * 1000, // 60 minutes (deprecated)
     MAX_SESSIONS: 20,
-    CACHE_DIR_NAME: 'gemini-mcp-review-sessions', // deprecated
+    CACHE_DIR_NAME: 'ai-cli-mcp-review-sessions', // deprecated
   },
   // Review types
   TYPES: {

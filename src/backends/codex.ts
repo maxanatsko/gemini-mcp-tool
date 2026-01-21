@@ -12,7 +12,9 @@ import { constants as fsConstants } from 'fs';
 import * as path from 'path';
 import { BackendExecutor, BackendConfig, BackendType, BackendResult } from './types.js';
 import { Logger } from '../utils/logger.js';
-import { CODEX_CLI, CODEX_FILE_REF, CODEX_MODELS, ERROR_MESSAGES } from '../constants.js';
+import { CODEX_CLI, CODEX_FILE_REF, CODEX_OUTPUT, CODEX_MODELS, ERROR_MESSAGES } from '../constants.js';
+import { getAllowedEnv } from '../utils/envAllowlist.js';
+import { getChangeModeInstructionsCondensed } from '../utils/changeModeInstructions.js';
 
 /** Parsed result from Codex JSON output */
 interface CodexJsonResult {
@@ -28,6 +30,11 @@ export class CodexBackend implements BackendExecutor {
     config: BackendConfig,
     onProgress?: (output: string) => void
   ): Promise<BackendResult> {
+    // Security: Validate model name to prevent argument injection
+    if (config.model && config.model.startsWith('-')) {
+      throw new Error(`Invalid model name: model cannot start with '-'`);
+    }
+
     // Translate @file references to inline content since Codex doesn't support them
     const processedPrompt = await this.translateFileRefs(prompt, config.cwd);
 
@@ -52,7 +59,7 @@ export class CodexBackend implements BackendExecutor {
 
   async isAvailable(): Promise<boolean> {
     return new Promise((resolve) => {
-      const child = spawn('which', ['codex'], { shell: true });
+      const child = spawn('which', ['codex']);
       child.on('close', (code) => resolve(code === 0));
       child.on('error', () => resolve(false));
     });
@@ -128,16 +135,15 @@ export class CodexBackend implements BackendExecutor {
 
   /**
    * Validate that a resolved path is within the allowed workspace
-   * Prevents path traversal attacks
+   * Prevents path traversal attacks including Windows drive letter escapes
    */
   private isPathWithinWorkspace(resolvedPath: string, workingDir: string): boolean {
-    // Normalize both paths to handle any .. or . components
     const normalizedPath = path.normalize(resolvedPath);
     const normalizedWorkDir = path.normalize(workingDir);
+    const relative = path.relative(normalizedWorkDir, normalizedPath);
 
-    // Check if the resolved path starts with the working directory
-    return normalizedPath.startsWith(normalizedWorkDir + path.sep) ||
-           normalizedPath === normalizedWorkDir;
+    // Check: empty string (workspace root) is allowed, doesn't escape via '..', not absolute (handles Windows drive letters)
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
   }
 
   /**
@@ -326,27 +332,7 @@ export class CodexBackend implements BackendExecutor {
   }
 
   private applyChangeModeInstructions(prompt: string): string {
-    return `
-[CHANGEMODE INSTRUCTIONS]
-You are generating code modifications. Output changes in a structured format that can be applied programmatically.
-
-OUTPUT FORMAT (follow exactly):
-**FILE: [filename]:[line_number]**
-\`\`\`
-OLD:
-[exact code to be replaced]
-NEW:
-[new code to insert]
-\`\`\`
-
-REQUIREMENTS:
-1. The OLD section must match the file content EXACTLY
-2. Include enough context to make the match unique
-3. Provide complete, functional replacement code
-
-USER REQUEST:
-${prompt}
-`;
+    return getChangeModeInstructionsCondensed(prompt);
   }
 
   /**
@@ -354,7 +340,14 @@ ${prompt}
    * Extracts thread_id from thread.started event and response text from message events
    */
   private parseJsonOutput(jsonlOutput: string): CodexJsonResult {
-    const lines = jsonlOutput.trim().split('\n');
+    const allLines = jsonlOutput.trim().split('\n');
+
+    // Defensive line limit to prevent DoS via massive JSONL output
+    const lines = allLines.slice(0, CODEX_OUTPUT.MAX_JSONL_LINES);
+    if (allLines.length >= CODEX_OUTPUT.MAX_JSONL_LINES) {
+      Logger.warn(`Truncated JSONL output to ${CODEX_OUTPUT.MAX_JSONL_LINES} lines`);
+    }
+
     let threadId: string | undefined;
     const responseChunks: string[] = [];
 
@@ -436,7 +429,7 @@ ${prompt}
       Logger.commandExecution('codex', args, startTime);
 
       const childProcess = spawn('codex', args, {
-        env: process.env,
+        env: getAllowedEnv(),
         shell: false,
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: cwd || process.cwd(),
@@ -449,13 +442,25 @@ ${prompt}
       let stdout = '';
       let stderr = '';
       let isResolved = false;
+      let outputSizeExceeded = false;
 
       childProcess.stdout.on('data', (data) => {
-        stdout += data.toString();
+        // Security: Prevent memory exhaustion from massive output
+        if (outputSizeExceeded) return;
+
+        const chunk = data.toString();
+        if (stdout.length + chunk.length > CODEX_OUTPUT.MAX_OUTPUT_SIZE) {
+          Logger.warn(`Output exceeds ${CODEX_OUTPUT.MAX_OUTPUT_SIZE / 1024 / 1024}MB limit, killing process`);
+          outputSizeExceeded = true;
+          childProcess.kill('SIGTERM');
+          return;
+        }
+
+        stdout += chunk;
 
         // For JSON output, try to parse and report progress from events
         if (onProgress) {
-          const newLines = data.toString().split('\n');
+          const newLines = chunk.split('\n');
           for (const line of newLines) {
             if (!line.trim()) continue;
             try {

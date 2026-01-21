@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import { Logger } from "./logger.js";
+import { getAllowedEnv } from "./envAllowlist.js";
 
 export async function executeCommand(
   command: string,
@@ -12,7 +13,7 @@ export async function executeCommand(
     Logger.commandExecution(command, args, startTime);
 
     const childProcess = spawn(command, args, {
-      env: process.env,
+      env: getAllowedEnv(),
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
       cwd: cwd || process.cwd(),

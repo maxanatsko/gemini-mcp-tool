@@ -9,6 +9,12 @@ export const timeoutTestTool: UnifiedTool = {
   name: "timeout-test",
   description: "Test timeout prevention by running for a specified duration",
   zodSchema: timeoutTestArgsSchema,
+  annotations: {
+    readOnlyHint: true,      // Just waits, doesn't modify state
+    destructiveHint: false,  // Doesn't delete anything
+    idempotentHint: true,    // Same input yields same result
+    openWorldHint: false,    // No external interactions
+  },
   prompt: {
     description: "Test the timeout prevention system by running a long operation",
   },

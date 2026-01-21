@@ -29,8 +29,8 @@ import {
 
 const server = new Server(
   {
-    name: "gemini-cli-mcp",
-    version: "1.1.4",
+    name: "ai-cli-mcp-server",
+    version: "3.0.0",
   },{
     capabilities: {
       tools: {},
@@ -40,8 +40,6 @@ const server = new Server(
     },
   },
 );
-
-let isProcessing = false; let currentOperationName = ""; let latestOutput = "";
 
 async function sendNotification(method: string, params: any) {
   try {
@@ -83,14 +81,27 @@ async function sendProgressNotification(
   }
 }
 
+/** Per-request progress state (avoids global state race conditions) */
+interface ProgressState {
+  interval: NodeJS.Timeout;
+  progressToken?: string | number;
+  operationName: string;
+  latestOutput: string;
+  isActive: boolean;
+  stop: (success: boolean) => void;
+  updateOutput: (output: string) => void;
+}
+
 function startProgressUpdates(
   operationName: string,
   progressToken?: string | number
-) {
-  isProcessing = true;
-  currentOperationName = operationName;
-  latestOutput = ""; // Reset latest output
-  
+): ProgressState {
+  // Per-request state - no global variables
+  let isActive = true;
+  let latestOutput = "";
+  let messageIndex = 0;
+  let progress = 0;
+
   const progressMessages = [
     `🧠 ${operationName} - Analyzing your request...`,
     `📊 ${operationName} - Processing files and generating insights...`,
@@ -98,10 +109,7 @@ function startProgressUpdates(
     `⏱️ ${operationName} - Large analysis in progress (this is normal for big requests)...`,
     `🔍 ${operationName} - Still working... Quality results take time...`,
   ];
-  
-  let messageIndex = 0;
-  let progress = 0;
-  
+
   // Send immediate acknowledgment if progress requested
   if (progressToken) {
     sendProgressNotification(
@@ -111,20 +119,20 @@ function startProgressUpdates(
       `🔍 Starting ${operationName}`
     );
   }
-  
+
   // Keep client alive with periodic updates
   const progressInterval = setInterval(async () => {
-    if (isProcessing && progressToken) {
+    if (isActive && progressToken) {
       // Simply increment progress value
       progress += 1;
-      
+
       // Include latest output if available
       const baseMessage = progressMessages[messageIndex % progressMessages.length];
       const outputPreview = latestOutput.slice(-150).trim(); // Last 150 chars
-      const message = outputPreview 
+      const message = outputPreview
         ? `${baseMessage}\n📝 Output: ...${outputPreview}`
         : baseMessage;
-      
+
       await sendProgressNotification(
         progressToken,
         progress,
@@ -132,32 +140,37 @@ function startProgressUpdates(
         message
       );
       messageIndex++;
-    } else if (!isProcessing) {
-      clearInterval(progressInterval);
     }
   }, PROTOCOL.KEEPALIVE_INTERVAL); // Every 25 seconds
-  
-  return { interval: progressInterval, progressToken };
-}
 
-function stopProgressUpdates(
-  progressData: { interval: NodeJS.Timeout; progressToken?: string | number },
-  success: boolean = true
-) {
-  const operationName = currentOperationName; // Store before clearing
-  isProcessing = false;
-  currentOperationName = "";
-  clearInterval(progressData.interval);
-  
-  // Send final progress notification if client requested progress
-  if (progressData.progressToken) {
-    sendProgressNotification(
-      progressData.progressToken,
-      100,
-      100,
-      success ? `✅ ${operationName} completed successfully` : `❌ ${operationName} failed`
-    );
-  }
+  const stop = (success: boolean) => {
+    isActive = false;
+    clearInterval(progressInterval);
+
+    // Send final progress notification if client requested progress
+    if (progressToken) {
+      sendProgressNotification(
+        progressToken,
+        100,
+        100,
+        success ? `✅ ${operationName} completed successfully` : `❌ ${operationName} failed`
+      );
+    }
+  };
+
+  const updateOutput = (output: string) => {
+    latestOutput = output;
+  };
+
+  return {
+    interval: progressInterval,
+    progressToken,
+    operationName,
+    latestOutput,
+    isActive,
+    stop,
+    updateOutput,
+  };
 }
 
 // tools/list
@@ -172,10 +185,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
   if (toolExists(toolName)) {
     // Check if client requested progress updates
     const progressToken = (request.params as any)._meta?.progressToken;
-    
-    // Start progress updates if client requested them
-    const progressData = startProgressUpdates(toolName, progressToken);
-    
+
+    // Start progress updates if client requested them (per-request state)
+    const progressState = startProgressUpdates(toolName, progressToken);
+
     try {
       // Get prompt and other parameters from arguments with proper typing
       const args: ToolArguments = (request.params.arguments as ToolArguments) || {};
@@ -184,11 +197,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
 
       // Execute the tool using the unified registry with progress callback
       const result = await executeTool(toolName, args, (newOutput) => {
-        latestOutput = newOutput;
+        progressState.updateOutput(newOutput);
       });
 
       // Stop progress updates
-      stopProgressUpdates(progressData, true);
+      progressState.stop(true);
 
       return {
         content: [
@@ -201,8 +214,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest)
       };
     } catch (error) {
       // Stop progress updates on error
-      stopProgressUpdates(progressData, false);
-      
+      progressState.stop(false);
+
       Logger.error(`Error in tool '${toolName}':`, error);
 
       const errorMessage =
@@ -252,7 +265,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request: GetPromptReques
 
 // Start the server
 async function main() {
-  Logger.debug("init gemini-mcp-tool");
+  Logger.debug("init ai-cli-mcp-server");
   const transport = new StdioServerTransport(); await server.connect(transport);
-  Logger.debug("gemini-mcp-tool listening on stdio");
+  Logger.debug("ai-cli-mcp-server listening on stdio");
 } main().catch((error) => {Logger.error("Fatal error:", error); process.exit(1); }); 
