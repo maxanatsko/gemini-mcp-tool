@@ -3,6 +3,7 @@ import { existsSync, constants as fsConstants } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { Logger } from './logger.js';
+import { SESSION } from '../constants.js';
 
 /**
  * Base interface that all tool-specific session data must extend
@@ -37,39 +38,14 @@ export interface SessionConfig {
  * Default session configuration for all tools
  */
 const DEFAULT_SESSION_CONFIG: Omit<SessionConfig, 'toolName'> = {
-  ttl: 24 * 60 * 60 * 1000, // 24 hours default
-  maxSessions: 20, // 20 sessions default
-  evictionPolicy: 'lru' // LRU default
+  ttl: SESSION.DEFAULT_TTL,
+  maxSessions: SESSION.DEFAULT_MAX_SESSIONS,
+  evictionPolicy: SESSION.DEFAULT_EVICTION_POLICY
 };
 
-/**
- * Default session configurations per tool
- */
-const DEFAULT_CONFIGS: Record<string, Partial<SessionConfig>> = {
-  'review-code': {
-    ttl: 24 * 60 * 60 * 1000, // 24 hours
-    maxSessions: 20,
-    evictionPolicy: 'lru' // Changed from 'fifo' to 'lru' for consistency
-  },
-  'ask': {
-    ttl: 7 * 24 * 60 * 60 * 1000, // 7 days
-    maxSessions: 50,
-    evictionPolicy: 'lru'
-  },
-  'ask-gemini': {
-    ttl: 7 * 24 * 60 * 60 * 1000, // 7 days
-    maxSessions: 50,
-    evictionPolicy: 'lru'
-  },
-  'brainstorm': {
-    ttl: 14 * 24 * 60 * 60 * 1000, // 14 days
-    maxSessions: 30,
-    evictionPolicy: 'lru'
-  }
-};
-
-// Base session storage directory
-const BASE_SESSIONS_DIR = path.join(os.homedir(), '.gemini-mcp', 'sessions');
+// Base session storage directory (primary + legacy for backwards compatibility)
+const PRIMARY_BASE_SESSIONS_DIR = path.join(os.homedir(), SESSION.BASE_DIR);
+const LEGACY_BASE_SESSIONS_DIR = path.join(os.homedir(), '.gemini-mcp', 'sessions');
 
 /**
  * Generic session manager for all MCP tools
@@ -88,16 +64,18 @@ export class SessionManager<T extends SessionData> {
   private initPromise: Promise<void> | null = null;
 
   constructor(toolName: string, customConfig?: Partial<SessionConfig>) {
-    const defaultConfig = DEFAULT_CONFIGS[toolName] || {};
+    const toolConfig = (SESSION.TOOL_CONFIGS as Record<string, any>)[toolName] as
+      | { TTL?: number; MAX_SESSIONS?: number; EVICTION_POLICY?: 'fifo' | 'lru' }
+      | undefined;
 
     this.config = {
       toolName,
-      ttl: customConfig?.ttl ?? defaultConfig.ttl ?? DEFAULT_SESSION_CONFIG.ttl,
-      maxSessions: customConfig?.maxSessions ?? defaultConfig.maxSessions ?? DEFAULT_SESSION_CONFIG.maxSessions,
-      evictionPolicy: customConfig?.evictionPolicy ?? defaultConfig.evictionPolicy ?? DEFAULT_SESSION_CONFIG.evictionPolicy
+      ttl: customConfig?.ttl ?? toolConfig?.TTL ?? DEFAULT_SESSION_CONFIG.ttl,
+      maxSessions: customConfig?.maxSessions ?? toolConfig?.MAX_SESSIONS ?? DEFAULT_SESSION_CONFIG.maxSessions,
+      evictionPolicy: customConfig?.evictionPolicy ?? toolConfig?.EVICTION_POLICY ?? DEFAULT_SESSION_CONFIG.evictionPolicy
     };
 
-    this.cacheDir = path.join(BASE_SESSIONS_DIR, toolName);
+    this.cacheDir = path.join(PRIMARY_BASE_SESSIONS_DIR, toolName);
   }
 
   /**
@@ -194,22 +172,32 @@ export class SessionManager<T extends SessionData> {
    * @returns Session data or null if not found/expired
    */
   async load(sessionId: string): Promise<T | null> {
-    const filePath = this.getSessionFilePath(sessionId);
+    await this.ensureCacheDirAsync();
+
+    const safeSessionId = this.getSafeSessionId(sessionId);
+    const filePath = path.join(this.cacheDir, `${safeSessionId}.json`);
+    const legacyFilePath = path.join(LEGACY_BASE_SESSIONS_DIR, this.config.toolName, `${safeSessionId}.json`);
 
     try {
-      // Check if file exists asynchronously
+      // Check if file exists asynchronously (primary first, then legacy)
+      let activeFilePath = filePath;
       try {
-        await fs.access(filePath, fsConstants.F_OK);
+        await fs.access(activeFilePath, fsConstants.F_OK);
       } catch {
-        Logger.debug(`[${this.config.toolName}] Session not found: ${sessionId}`);
-        return null;
+        try {
+          await fs.access(legacyFilePath, fsConstants.F_OK);
+          activeFilePath = legacyFilePath;
+        } catch {
+          Logger.debug(`[${this.config.toolName}] Session not found: ${sessionId}`);
+          return null;
+        }
       }
 
-      const cacheEntry = await this.readSessionFile<T>(filePath);
+      const cacheEntry = await this.readSessionFile<T>(activeFilePath);
 
       // Check expiry
       if (Date.now() > cacheEntry.expiryTime) {
-        await fs.unlink(filePath);
+        await fs.unlink(activeFilePath);
         Logger.debug(`[${this.config.toolName}] Session expired and deleted: ${sessionId}`);
 
         // Moderate optimization: run cleanup when we find expired sessions
@@ -221,7 +209,19 @@ export class SessionManager<T extends SessionData> {
       if (this.config.evictionPolicy === 'lru') {
         cacheEntry.data.lastAccessedAt = Date.now();
         cacheEntry.timestamp = Date.now();
-        await fs.writeFile(filePath, JSON.stringify(cacheEntry, null, 2), 'utf-8');
+        await fs.writeFile(activeFilePath, JSON.stringify(cacheEntry, null, 2), 'utf-8');
+      }
+
+      // Migrate legacy sessions to the primary cache dir on successful load
+      if (activeFilePath === legacyFilePath) {
+        try {
+          const primaryPath = path.join(this.cacheDir, `${safeSessionId}.json`);
+          await fs.writeFile(primaryPath, JSON.stringify(cacheEntry, null, 2), 'utf-8');
+          await fs.unlink(legacyFilePath).catch(() => undefined);
+          Logger.debug(`[${this.config.toolName}] Migrated legacy session: ${sessionId}`);
+        } catch (migrationError) {
+          Logger.debug(`[${this.config.toolName}] Failed to migrate legacy session ${sessionId}: ${migrationError}`);
+        }
       }
 
       Logger.debug(`[${this.config.toolName}] Loaded session: ${sessionId}`);
@@ -401,19 +401,24 @@ export class SessionManager<T extends SessionData> {
    * Gets the file path for a session
    */
   private getSessionFilePath(sessionId: string): string {
+    const safeSessionId = this.getSafeSessionId(sessionId);
+    return path.join(this.cacheDir, `${safeSessionId}.json`);
+  }
+
+  private getSafeSessionId(sessionId: string): string {
     // Issue #12: More robust sanitization
     // Replace invalid characters, then clean up consecutive/leading/trailing hyphens
     let safeSessionId = sessionId
-      .replace(/[^a-zA-Z0-9-_]/g, '-')  // Replace invalid chars
-      .replace(/-+/g, '-')                // Collapse consecutive hyphens
-      .replace(/^-+|-+$/g, '');           // Remove leading/trailing hyphens
+      .replace(/[^a-zA-Z0-9-_]/g, '-') // Replace invalid chars
+      .replace(/-+/g, '-') // Collapse consecutive hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
 
     // Ensure we have a valid ID after sanitization
     if (!safeSessionId) {
       safeSessionId = 'session';
     }
 
-    return path.join(this.cacheDir, `${safeSessionId}.json`);
+    return safeSessionId;
   }
 
   /**

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ReviewComment } from './reviewSessionCache.js';
+import type { ReviewComment } from './sessionSchemas.js';
 import { Logger } from './logger.js';
 
 /**

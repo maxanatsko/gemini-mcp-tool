@@ -1,5 +1,5 @@
-import { CodeReviewSession, ReviewRound, ReviewComment } from './reviewSessionCache.js';
-import { REVIEW } from '../constants.js';
+import type { ReviewCodeSessionData as CodeReviewSession, ReviewRound, ReviewComment } from './sessionSchemas.js';
+import { REVIEW, SESSION } from '../constants.js';
 
 export interface ReviewFormatterConfig {
   session: CodeReviewSession;
@@ -130,7 +130,8 @@ export function groupCommentsByFile(comments: ReviewComment[]): Map<string, Revi
  * @returns Formatted instructions string
  */
 function formatContinuationInstructions(session: CodeReviewSession): string {
-  const expiryDate = new Date(session.lastAccessedAt + REVIEW.SESSION.TTL);
+  const reviewTtlMs = SESSION.TOOL_CONFIGS['review-code']?.TTL ?? SESSION.DEFAULT_TTL;
+  const expiryDate = new Date(session.lastAccessedAt + reviewTtlMs);
 
   let instructions = `## Continue Review\n\n`;
   instructions += `To continue this review session:\n`;
@@ -212,6 +213,9 @@ export function formatSessionNotFound(
   currentGitBranch: string,
   currentGitCommit: string
 ): string {
+  const reviewTtlMs = SESSION.TOOL_CONFIGS['review-code']?.TTL ?? SESSION.DEFAULT_TTL;
+  const ttlHours = Math.round((reviewTtlMs / (60 * 60 * 1000)) * 10) / 10;
+
   return `⚠️ **Session Not Found or Expired**
 
 The review session \`${sessionId}\` was not found or has expired.
@@ -224,7 +228,7 @@ The review session \`${sessionId}\` was not found or has expired.
 1. Start a new review session with \`forceNewSession: true\`
 2. Wait if you just made a commit (session auto-creates based on current git state)
 
-**Note:** Review sessions expire after 60 minutes of inactivity.
+**Note:** Review sessions expire after ${ttlHours} hour(s) of inactivity.
 `;
 }
 

@@ -79,7 +79,8 @@ export class GeminiBackend implements BackendExecutor {
 
   async isAvailable(): Promise<boolean> {
     return new Promise((resolve) => {
-      const child = spawn('which', ['gemini']);
+      const checker = process.platform === 'win32' ? 'where' : 'which';
+      const child = spawn(checker, ['gemini']);
       child.on('close', (code) => resolve(code === 0));
       child.on('error', () => resolve(false));
     });

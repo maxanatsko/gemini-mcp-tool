@@ -166,7 +166,7 @@ export const SESSION = {
     'review-code': {
       TTL: 24 * 60 * 60 * 1000, // 24 hours
       MAX_SESSIONS: 20,
-      EVICTION_POLICY: 'fifo' as const
+      EVICTION_POLICY: 'lru' as const
     },
     'ask': {
       TTL: 7 * 24 * 60 * 60 * 1000, // 7 days

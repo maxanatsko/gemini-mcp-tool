@@ -1,4 +1,4 @@
-import { CodeReviewSession, ReviewRound } from './reviewSessionCache.js';
+import type { ReviewCodeSessionData as CodeReviewSession, ReviewRound } from './sessionSchemas.js';
 import { GitState } from './gitStateDetector.js';
 import { REVIEW } from '../constants.js';
 

@@ -61,7 +61,7 @@ async function sendProgressNotification(
   total?: number,
   message?: string
 ) {
-  if (!progressToken) return; // Only send if client requested progress
+  if (progressToken === undefined || progressToken === null) return; // Only send if client requested progress
   
   try {
     const params: any = {
@@ -96,6 +96,8 @@ function startProgressUpdates(
   operationName: string,
   progressToken?: string | number
 ): ProgressState {
+  const hasProgressToken = progressToken !== undefined && progressToken !== null;
+
   // Per-request state - no global variables
   let isActive = true;
   let latestOutput = "";
@@ -111,7 +113,7 @@ function startProgressUpdates(
   ];
 
   // Send immediate acknowledgment if progress requested
-  if (progressToken) {
+  if (hasProgressToken) {
     sendProgressNotification(
       progressToken,
       0,
@@ -122,7 +124,7 @@ function startProgressUpdates(
 
   // Keep client alive with periodic updates
   const progressInterval = setInterval(async () => {
-    if (isActive && progressToken) {
+    if (isActive && hasProgressToken) {
       // Simply increment progress value
       progress += 1;
 
@@ -148,7 +150,7 @@ function startProgressUpdates(
     clearInterval(progressInterval);
 
     // Send final progress notification if client requested progress
-    if (progressToken) {
+    if (hasProgressToken) {
       sendProgressNotification(
         progressToken,
         100,

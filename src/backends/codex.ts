@@ -59,7 +59,8 @@ export class CodexBackend implements BackendExecutor {
 
   async isAvailable(): Promise<boolean> {
     return new Promise((resolve) => {
-      const child = spawn('which', ['codex']);
+      const checker = process.platform === 'win32' ? 'where' : 'which';
+      const child = spawn(checker, ['codex']);
       child.on('close', (code) => resolve(code === 0));
       child.on('error', () => resolve(false));
     });

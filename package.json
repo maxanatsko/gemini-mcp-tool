@@ -9,12 +9,11 @@
     "gemini-mcp": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc && node -e \"try{require('fs').chmodSync('dist/index.js',0o755)}catch(e){}\"",
     "start": "node dist/index.js",
-    "dev": "tsc && node dist/index.js",
+    "dev": "npm run build && node dist/index.js",
     "test": "echo \"No tests yet\" && exit 0",
     "lint": "tsc --noEmit",
-    "contribute": "tsx src/contribute.ts",
     "prepublishOnly": "echo '⚠️  Remember to test locally first!' && npm run build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -48,20 +47,14 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0",
-    "ai": "^4.3.17",
-    "chalk": "^5.0.0",
-    "d3-shape": "^3.2.0",
-    "inquirer": "^9.0.0",
-    "prismjs": "^1.30.0",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
-    "@types/inquirer": "^9.0.0",
     "@types/node": "^20.0.0",
     "archiver": "^7.0.1",
     "mermaid": "^11.9.0",
-    "tsx": "^4.0.0",
+    "prismjs": "^1.30.0",
     "typescript": "^5.0.0",
     "vitepress": "^1.6.3",
     "vitepress-plugin-mermaid": "^2.0.17"

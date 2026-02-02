@@ -13,8 +13,9 @@ import {
 } from '../utils/reviewSessionManager.js';
 import type {
   ReviewCodeSessionData as CodeReviewSession,
+  ReviewComment,
+  ReviewRound,
 } from '../utils/sessionSchemas.js';
-import type { ReviewComment, ReviewRound } from '../utils/reviewSessionCache.js';
 import { buildReviewPrompt, extractFilesFromPrompt } from '../utils/reviewPromptBuilder.js';
 import { parseReviewResponse, validateComments } from '../utils/reviewResponseParser.js';
 import {
@@ -57,7 +58,17 @@ const reviewCodeArgsSchema = z.object({
     .array(
       z.object({
         commentId: z.string(),
-        decision: z.enum(['accept', 'reject', 'modify', 'defer']),
+        // Accept both legacy verbs and persisted status values for compatibility.
+        decision: z.enum([
+          'accept',
+          'reject',
+          'modify',
+          'defer',
+          'accepted',
+          'rejected',
+          'modified',
+          'deferred'
+        ]),
         notes: z.string().optional()
       })
     )
@@ -302,11 +313,37 @@ function applyCommentDecisions(
   // Create a Map for O(1) lookups instead of O(N) linear search
   const commentMap = new Map(session.allComments.map(c => [c.id, c]));
 
+  const normalizeDecision = (decision: string): ReviewComment['status'] | null => {
+    switch (decision) {
+      case 'accept':
+        return 'accepted';
+      case 'reject':
+        return 'rejected';
+      case 'modify':
+        return 'modified';
+      case 'defer':
+        return 'deferred';
+      case 'accepted':
+      case 'rejected':
+      case 'modified':
+      case 'deferred':
+        return decision;
+      default:
+        return null;
+    }
+  };
+
   for (const decision of decisions) {
     const comment = commentMap.get(decision.commentId);
 
     if (comment) {
-      comment.status = decision.decision as ReviewComment['status'];
+      const normalized = normalizeDecision(decision.decision);
+      if (!normalized) {
+        Logger.debug(`Ignoring unknown decision '${decision.decision}' for comment ${decision.commentId}`);
+        continue;
+      }
+
+      comment.status = normalized;
       if (decision.notes) {
         comment.resolution = decision.notes;
       }

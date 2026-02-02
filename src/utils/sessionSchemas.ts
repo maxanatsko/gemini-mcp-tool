@@ -2,6 +2,34 @@ import { SessionData } from './sessionManager.js';
 import { GitState } from './gitStateDetector.js';
 
 /**
+ * Review comment structure shared across review-code tooling.
+ * Kept here (not in deprecated reviewSessionCache.ts) to avoid importing legacy sync-FS code at runtime.
+ */
+export interface ReviewComment {
+  id: string;
+  filePattern: string;
+  lineRange?: { start: number; end: number };
+  severity: 'critical' | 'important' | 'suggestion' | 'question';
+  comment: string;
+  roundGenerated: number;
+  status: 'pending' | 'accepted' | 'rejected' | 'modified' | 'deferred';
+  resolution?: string;
+}
+
+/**
+ * One review iteration/round, including all comments generated in that round.
+ */
+export interface ReviewRound {
+  roundNumber: number;
+  timestamp: number;
+  filesReviewed: string[];
+  userPrompt: string;
+  response: string;
+  commentsGenerated: ReviewComment[];
+  gitState: GitState;
+}
+
+/**
  * Ask Session Data
  * Tracks multi-turn Q&A conversations with context across backends
  */
@@ -97,36 +125,10 @@ export interface ReviewCodeSessionData extends SessionData {
   currentGitState: GitState;
 
   /** All review rounds */
-  rounds: Array<{
-    roundNumber: number;
-    timestamp: number;
-    filesReviewed: string[];
-    userPrompt: string;
-    response: string;
-    commentsGenerated: Array<{
-      id: string;
-      filePattern: string;
-      lineRange?: { start: number; end: number };
-      severity: 'critical' | 'important' | 'suggestion' | 'question';
-      comment: string;
-      roundGenerated: number;
-      status: 'pending' | 'accepted' | 'rejected' | 'modified' | 'deferred';
-      resolution?: string;
-    }>;
-    gitState: GitState;
-  }>;
+  rounds: ReviewRound[];
 
   /** All comments across all rounds */
-  allComments: Array<{
-    id: string;
-    filePattern: string;
-    lineRange?: { start: number; end: number };
-    severity: 'critical' | 'important' | 'suggestion' | 'question';
-    comment: string;
-    roundGenerated: number;
-    status: 'pending' | 'accepted' | 'rejected' | 'modified' | 'deferred';
-    resolution?: string;
-  }>;
+  allComments: ReviewComment[];
 
   /** Files tracked across all rounds */
   filesTracked: string[];
