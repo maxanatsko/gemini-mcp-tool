@@ -34,6 +34,9 @@ export class CodexBackend implements BackendExecutor {
     if (config.model && config.model.startsWith('-')) {
       throw new Error(`Invalid model name: model cannot start with '-'`);
     }
+    if (config.codexThreadId && config.codexThreadId.startsWith('-')) {
+      throw new Error(`Invalid codex thread id: thread id cannot start with '-'`);
+    }
 
     // Translate @file references to inline content since Codex doesn't support them
     const processedPrompt = await this.translateFileRefs(prompt, config.cwd);
@@ -68,6 +71,7 @@ export class CodexBackend implements BackendExecutor {
 
   getModels(): string[] {
     return [
+      CODEX_MODELS.GPT_5_3_CODEX,
       CODEX_MODELS.GPT_5_2_CODEX,
       CODEX_MODELS.GPT_5_1_CODEX_MINI,
       CODEX_MODELS.GPT_5_1_CODEX_MAX,
@@ -87,14 +91,7 @@ export class CodexBackend implements BackendExecutor {
   private buildArgs(config: BackendConfig): string[] {
     const args: string[] = [];
 
-    // Use resume command if we have an existing thread ID
-    // `codex resume <threadId>` is a separate top-level command, not a subcommand of exec
-    if (config.codexThreadId) {
-      args.push(CODEX_CLI.COMMANDS.RESUME, config.codexThreadId);
-    } else {
-      args.push(CODEX_CLI.COMMANDS.EXEC);
-    }
-
+    // Codex parses approval/sandbox options as global flags; place before subcommands.
     if (config.model) {
       args.push(CODEX_CLI.FLAGS.MODEL, config.model);
     }
@@ -120,9 +117,18 @@ export class CodexBackend implements BackendExecutor {
 
     args.push(CODEX_CLI.FLAGS.SANDBOX, sandboxMode);
 
-    // Reasoning effort (defaults to medium if not specified)
+    // Reasoning effort is configured via --config (not --reasoning-effort) in current Codex CLI.
     if (config.reasoningEffort) {
-      args.push(CODEX_CLI.FLAGS.REASONING_EFFORT, config.reasoningEffort);
+      args.push(
+        CODEX_CLI.FLAGS.CONFIG,
+        `model_reasoning_effort="${config.reasoningEffort}"`
+      );
+    }
+
+    // Use `codex exec` and `codex exec resume <threadId>` for non-interactive mode.
+    args.push(CODEX_CLI.COMMANDS.EXEC);
+    if (config.codexThreadId) {
+      args.push(CODEX_CLI.COMMANDS.RESUME, config.codexThreadId);
     }
 
     // Enable JSON output to capture thread_id
@@ -368,6 +374,25 @@ export class CodexBackend implements BackendExecutor {
         // Agent messages contain the actual response
         if (event.type === 'item.agent_message' && event.content) {
           responseChunks.push(event.content);
+        }
+
+        // Newer Codex JSONL emits completed items with nested payload.
+        // Example: {"type":"item.completed","item":{"type":"agent_message","text":"..."}}
+        if (event.type === 'item.completed' && event.item) {
+          const item = event.item;
+          if (item.type === 'agent_message') {
+            if (typeof item.text === 'string') {
+              responseChunks.push(item.text);
+            } else if (typeof item.content === 'string') {
+              responseChunks.push(item.content);
+            } else if (Array.isArray(item.content)) {
+              for (const part of item.content) {
+                if (part?.type === 'text' && part.text) {
+                  responseChunks.push(part.text);
+                }
+              }
+            }
+          }
         }
 
         // Also check for message content in turn.completed

@@ -92,13 +92,13 @@ export const CODEX_CLI = {
         RESUME: 'resume',
     },
     FLAGS: {
+        CONFIG: '--config',
         MODEL: '-m',
         APPROVAL: '-a',
         SANDBOX: '-s',
         FULL_AUTO: '--full-auto',
         JSON: '--json',
         STDIN: '-',
-        REASONING_EFFORT: '--reasoning-effort',
     },
     APPROVAL_MODES: {
         UNTRUSTED: 'untrusted',
@@ -130,6 +130,7 @@ export const CODEX_OUTPUT = {
 // Codex Models
 export const CODEX_MODELS = {
     // Recommended
+    GPT_5_3_CODEX: 'gpt-5.3-codex', // Latest agentic coding model
     GPT_5_2_CODEX: 'gpt-5.2-codex', // Most advanced agentic coding model
     GPT_5_1_CODEX_MINI: 'gpt-5.1-codex-mini', // Smaller, cost-effective
     // Alternatives
@@ -138,7 +139,7 @@ export const CODEX_MODELS = {
     GPT_5_1: 'gpt-5.1', // Coding and agentic tasks
     GPT_5_1_CODEX: 'gpt-5.1-codex', // Long-running agentic coding
     // Default (if not specified, Codex CLI uses its own default)
-    DEFAULT: 'gpt-5.2-codex',
+    DEFAULT: 'gpt-5.3-codex',
 };
 // Shared Session Management Constants
 export const SESSION = {

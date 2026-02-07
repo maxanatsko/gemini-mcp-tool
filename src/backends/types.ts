@@ -19,7 +19,7 @@ export interface BackendConfig {
   // Codex-specific options
   approvalMode?: 'untrusted' | 'on-failure' | 'on-request' | 'never';
   fullAuto?: boolean;
-  // Codex native session resume - if provided, uses `codex resume <threadId>`
+  // Codex native session resume - if provided, uses `codex exec resume <threadId>`
   codexThreadId?: string;
   // Reasoning effort level (Codex only): low, medium (default), high, xhigh
   reasoningEffort?: 'low' | 'medium' | 'high' | 'xhigh';

@@ -74,13 +74,13 @@ export declare const CODEX_CLI: {
         readonly RESUME: "resume";
     };
     readonly FLAGS: {
+        readonly CONFIG: "--config";
         readonly MODEL: "-m";
         readonly APPROVAL: "-a";
         readonly SANDBOX: "-s";
         readonly FULL_AUTO: "--full-auto";
         readonly JSON: "--json";
         readonly STDIN: "-";
-        readonly REASONING_EFFORT: "--reasoning-effort";
     };
     readonly APPROVAL_MODES: {
         readonly UNTRUSTED: "untrusted";
@@ -110,13 +110,14 @@ export declare const CODEX_OUTPUT: {
     readonly MAX_JSONL_LINES: 10000;
 };
 export declare const CODEX_MODELS: {
+    readonly GPT_5_3_CODEX: "gpt-5.3-codex";
     readonly GPT_5_2_CODEX: "gpt-5.2-codex";
     readonly GPT_5_1_CODEX_MINI: "gpt-5.1-codex-mini";
     readonly GPT_5_1_CODEX_MAX: "gpt-5.1-codex-max";
     readonly GPT_5_2: "gpt-5.2";
     readonly GPT_5_1: "gpt-5.1";
     readonly GPT_5_1_CODEX: "gpt-5.1-codex";
-    readonly DEFAULT: "gpt-5.2-codex";
+    readonly DEFAULT: "gpt-5.3-codex";
 };
 export declare const SESSION: {
     readonly BASE_DIR: ".ai-cli-mcp/sessions";
