@@ -6,7 +6,7 @@ import { Logger } from "./utils/logger.js";
 import { PROTOCOL } from "./constants.js";
 import { getToolDefinitions, getPromptDefinitions, executeTool, toolExists, getPromptMessage } from "./tools/index.js";
 const server = new Server({
-    name: "ai-cli-mcp-server",
+    name: "gemini-mcp-tool",
     version: "3.0.0",
 }, {
     capabilities: {

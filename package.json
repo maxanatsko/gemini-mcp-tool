@@ -1,11 +1,11 @@
 {
-  "name": "@maxanatsko/ai-cli-mcp-server",
+  "name": "@maxanatsko/gemini-mcp-tool",
   "version": "3.0.0",
   "description": "MCP server for AI CLI integration (Gemini CLI + Codex CLI)",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "ai-cli-mcp": "dist/index.js",
+    "gemini-mcp-tool": "dist/index.js",
     "gemini-mcp": "dist/index.js"
   },
   "scripts": {
@@ -32,12 +32,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxanatsko/ai-cli-mcp-server.git"
+    "url": "git+https://github.com/maxanatsko/gemini-mcp-tool.git"
   },
   "bugs": {
-    "url": "https://github.com/maxanatsko/ai-cli-mcp-server/issues"
+    "url": "https://github.com/maxanatsko/gemini-mcp-tool/issues"
   },
-  "homepage": "https://github.com/maxanatsko/ai-cli-mcp-server#readme",
+  "homepage": "https://github.com/maxanatsko/gemini-mcp-tool#readme",
   "engines": {
     "node": ">=16.0.0"
   },

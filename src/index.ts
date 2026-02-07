@@ -29,7 +29,7 @@ import {
 
 const server = new Server(
   {
-    name: "ai-cli-mcp-server",
+    name: "gemini-mcp-tool",
     version: "3.0.0",
   },{
     capabilities: {
