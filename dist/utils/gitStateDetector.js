@@ -1,0 +1,67 @@
+import { executeCommand } from './commandExecutor.js';
+import { Logger } from './logger.js';
+/**
+ * Gets the current git state of the repository
+ * Executes git commands in parallel for better performance
+ * @returns GitState object with branch, commit, and status info
+ */
+export async function getCurrentGitState() {
+    try {
+        // Execute git commands in parallel for better performance
+        const [branch, commitHash, statusOutput] = await Promise.all([
+            executeCommand('git', ['rev-parse', '--abbrev-ref', 'HEAD']),
+            executeCommand('git', ['rev-parse', 'HEAD']),
+            executeCommand('git', ['status', '--porcelain'])
+        ]);
+        const workingTreeClean = statusOutput.trim() === '';
+        return {
+            branch: branch.trim(),
+            commitHash: commitHash.trim(),
+            workingTreeClean,
+            hasUncommittedChanges: !workingTreeClean,
+            timestamp: Date.now()
+        };
+    }
+    catch (error) {
+        Logger.error(`Failed to get git state: ${error}`);
+        throw new Error(`Git state detection failed. Ensure you're in a git repository: ${error}`);
+    }
+}
+/**
+ * Generates a session ID from git state
+ * Format: review-{branch}-{shortHash}
+ * @param gitState The git state to generate ID from
+ * @returns Session ID string
+ */
+export function generateSessionId(gitState) {
+    const shortHash = gitState.commitHash.slice(0, 8);
+    // Sanitize branch name for filesystem safety
+    const safeBranch = gitState.branch.replace(/[^a-zA-Z0-9-_]/g, '-');
+    return `review-${safeBranch}-${shortHash}`;
+}
+/**
+ * Checks if a session can continue based on git state comparison
+ * @param currentGitState Current git state
+ * @param sessionGitState Git state from existing session
+ * @returns Object indicating if continuation is allowed and reason if not
+ */
+export function detectSessionContinuation(currentGitState, sessionGitState) {
+    // Same branch and commit = auto-continue
+    if (currentGitState.branch === sessionGitState.branch &&
+        currentGitState.commitHash === sessionGitState.commitHash) {
+        return { canContinue: true };
+    }
+    // Different commit on same branch = warn but allow
+    if (currentGitState.branch === sessionGitState.branch) {
+        return {
+            canContinue: false,
+            reason: `Git state changed: commit ${sessionGitState.commitHash.slice(0, 8)} → ${currentGitState.commitHash.slice(0, 8)}`
+        };
+    }
+    // Different branch = don't auto-continue
+    return {
+        canContinue: false,
+        reason: `Branch changed: ${sessionGitState.branch} → ${currentGitState.branch}`
+    };
+}
+//# sourceMappingURL=gitStateDetector.js.map
