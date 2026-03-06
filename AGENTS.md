@@ -14,7 +14,9 @@
 
 **Guardrails from recent commits**
 - Tool registry source of truth is `src/tools/index.ts`; keep only stable/public tools registered. Do not leave deprecated aliases (for example `ask-gemini`) or test-only tools (for example `timeout-test`) in the registry.
+- `dist/` is intentionally committed for `npx`/GitHub usage; after source changes, run `npm run build` and include matching `dist/` updates in the same change.
 - For Codex CLI execution, place global flags (`-m`, `-a`, `-s`, `--config`) before `exec`; resume flows use `codex exec resume <threadId>`.
 - For Codex reasoning effort, use `--config model_reasoning_effort="<level>"` (not `--reasoning-effort`).
 - Codex JSON parsing must include `item.completed` events with nested `agent_message` payloads, not only legacy event shapes.
+- When changing Codex backend argument building or JSON parsing, update/add coverage in `tests/codex-backend.test.ts` and run `npm run test -- tests/codex-backend.test.ts`.
 - Sessions are stored under `~/.ai-cli-mcp/sessions/<tool-name>/`; keep legacy read compatibility from `~/.gemini-mcp/sessions/<tool-name>/` during migration.
