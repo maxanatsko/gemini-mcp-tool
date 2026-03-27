@@ -5,7 +5,7 @@ import { REVIEW } from '../constants.js';
  * @returns Formatted prompt string
  */
 export function buildReviewPrompt(config) {
-    const { userPrompt, session, files, reviewType, includeHistory, currentGitState } = config;
+    const { userPrompt, session, files, reviewType, severity, includeHistory, currentGitState } = config;
     // Build file references with @ syntax
     const fileRefs = files?.map(f => `@${f}`).join(' ') || '';
     let prompt = `# CODE REVIEW SESSION (Round ${session.totalRounds + 1})
@@ -15,10 +15,14 @@ export function buildReviewPrompt(config) {
 - Branch: ${currentGitState.branch}
 - Commit: ${currentGitState.commitHash.slice(0, 8)}
 - Review Type: ${reviewType}
+- Severity Scope: ${severity}
 - Files: ${files?.length || 'all tracked'} ${files ? 'specified' : 'files'}
 
 ## Review Instructions
 ${getReviewTypeInstructions(reviewType)}
+
+## Severity Filter
+${getSeverityInstructions(severity)}
 
 ## Output Format
 For each issue found, use this EXACT format:
@@ -44,6 +48,26 @@ For each issue found, use this EXACT format:
     }
     prompt += `${userPrompt}\n`;
     return prompt;
+}
+/**
+ * Returns severity-specific instructions so the model does not waste time
+ * generating feedback that will be discarded after parsing.
+ * @param severity The requested severity scope
+ * @returns Formatted instructions string
+ */
+export function getSeverityInstructions(severity) {
+    const instructions = {
+        'critical-only': `Only report **critical** issues.
+- Do not include important, suggestion, or question items.
+- If no critical issues exist, respond with: "No critical issues found."`,
+        'important-and-above': `Only report **critical** and **important** issues.
+- Do not include suggestion or question items.
+- If no critical or important issues exist, respond with: "No critical or important issues found."`,
+        all: `Report actionable issues across all supported severities.
+- Prioritize critical and important issues first.
+- Avoid low-value nitpicks.`
+    };
+    return instructions[severity] || instructions.all;
 }
 /**
  * Returns review instructions based on review type

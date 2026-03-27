@@ -6,6 +6,7 @@ import { buildReviewPrompt, extractFilesFromPrompt } from '../utils/reviewPrompt
 import { parseReviewResponse, validateComments } from '../utils/reviewResponseParser.js';
 import { formatReviewResponse, formatSessionNotFound, formatGitStateWarning } from '../utils/reviewFormatter.js';
 import { Logger } from '../utils/logger.js';
+import { MODELS } from '../constants.js';
 const reviewCodeArgsSchema = z.object({
     prompt: z
         .string()
@@ -151,6 +152,7 @@ export const reviewCodeTool = {
                 session,
                 files: files,
                 reviewType: reviewType,
+                severity: severity,
                 includeHistory: !!includeHistory,
                 currentGitState
             });
@@ -160,10 +162,13 @@ export const reviewCodeTool = {
             const backend = await getBackend(backendType);
             onProgress?.(`🤖 Using ${backend.name} backend...`);
             onProgress?.(`🔍 Round ${session.totalRounds + 1}: Reviewing ${files?.length || 'tracked'} file(s)...`);
+            const selectedModel = backendType === 'gemini'
+                ? model || MODELS.FLASH
+                : model;
             // Pass existing codexThreadId for native session resume when using Codex
             const backendResult = await backend.execute(reviewPrompt, {
                 provider: backendType,
-                model: model,
+                model: selectedModel,
                 sandbox: false,
                 changeMode: false,
                 allowedTools: allowedTools,

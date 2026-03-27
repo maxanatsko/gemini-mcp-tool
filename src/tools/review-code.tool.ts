@@ -24,6 +24,7 @@ import {
   formatGitStateWarning
 } from '../utils/reviewFormatter.js';
 import { Logger } from '../utils/logger.js';
+import { MODELS } from '../constants.js';
 
 const reviewCodeArgsSchema = z.object({
   prompt: z
@@ -206,6 +207,7 @@ export const reviewCodeTool: UnifiedTool = {
         session,
         files: files as string[] | undefined,
         reviewType: reviewType as string,
+        severity: severity as string,
         includeHistory: !!includeHistory,
         currentGitState
       });
@@ -221,12 +223,17 @@ export const reviewCodeTool: UnifiedTool = {
         `🔍 Round ${session.totalRounds + 1}: Reviewing ${files?.length || 'tracked'} file(s)...`
       );
 
+      const selectedModel =
+        backendType === 'gemini'
+          ? (model as string | undefined) || MODELS.FLASH
+          : (model as string | undefined);
+
       // Pass existing codexThreadId for native session resume when using Codex
       const backendResult = await backend.execute(
         reviewPrompt,
         {
           provider: backendType,
-          model: model as string | undefined,
+          model: selectedModel,
           sandbox: false,
           changeMode: false,
           allowedTools: allowedTools as string[] | undefined,

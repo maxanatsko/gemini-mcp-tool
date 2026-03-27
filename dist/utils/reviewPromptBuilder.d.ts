@@ -5,6 +5,7 @@ export interface ReviewPromptConfig {
     session: CodeReviewSession;
     files?: string[];
     reviewType: string;
+    severity: string;
     includeHistory: boolean;
     currentGitState: GitState;
 }
@@ -14,6 +15,13 @@ export interface ReviewPromptConfig {
  * @returns Formatted prompt string
  */
 export declare function buildReviewPrompt(config: ReviewPromptConfig): string;
+/**
+ * Returns severity-specific instructions so the model does not waste time
+ * generating feedback that will be discarded after parsing.
+ * @param severity The requested severity scope
+ * @returns Formatted instructions string
+ */
+export declare function getSeverityInstructions(severity: string): string;
 /**
  * Returns review instructions based on review type
  * @param reviewType The type of review to perform
