@@ -28,7 +28,8 @@
 
 ```
 Node.js ≥ 16.0.0
-Google Gemini CLI (configured)
+Google Gemini CLI   — for Gemini backend (gemini-cli.dev)
+OpenAI Codex CLI    — for Codex backend (optional, either or both)
 ```
 
 <br>
@@ -44,7 +45,7 @@ Google Gemini CLI (configured)
 ### Recommended
 
 ```bash
-claude mcp add llm-cli -- npx -y @maxanatsko/llm-cli-bridge
+claude mcp add llm-cli -- npx -y @maxanatsko/llm-cli-bridge@latest
 ```
 
 <br>
@@ -87,7 +88,7 @@ claude mcp add llm-cli -- llm-cli-bridge
   "mcpServers": {
     "llm-cli": {
       "command": "npx",
-      "args": ["-y", "@maxanatsko/llm-cli-bridge"]
+      "args": ["-y", "@maxanatsko/llm-cli-bridge@latest"]
     }
   }
 }
@@ -116,9 +117,9 @@ Linux     ~/.config/claude/claude_desktop_config.json
 ### File Analysis
 
 ```
-ask gemini to analyze @src/main.js
+analyze @src/main.js
 use gemini to summarize @.
-analyze @package.json dependencies
+use codex to review @package.json dependencies
 ```
 
 <br>
@@ -127,18 +128,27 @@ analyze @package.json dependencies
 
 ```
 ask gemini about React best practices
-use gemini to explain div centering
-ask gemini for latest tech news
+use codex to explain this architecture
+ask gemini for the latest news on this topic
 ```
 
 <br>
 
-### Sandbox Mode
+### Switching Backends
+
+```
+ask gemini to analyze @src/main.js
+ask codex to analyze @src/main.js        (codex backend)
+ask codex with high reasoning to review @src/main.js
+```
+
+<br>
+
+### Sandbox / Workspace Mode
 
 ```
 use gemini sandbox to run @script.py
-ask gemini to safely test this code
-use gemini sandbox to install numpy
+use codex in workspace-write mode to refactor @src/
 ```
 
 <br>
@@ -200,4 +210,4 @@ changeMode  Optional    Structured edit suggestions
 
 <br>
 
-<sub>MIT License — Not affiliated with Google</sub>
+<sub>MIT License — Not affiliated with Google or OpenAI</sub>
