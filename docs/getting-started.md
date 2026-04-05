@@ -37,13 +37,13 @@ Before installing, ensure you have:
 
 
 ## Claude Code (Recommended)
-::: warning 💡 gemini-mcp-tool is tested extensively with claude code
+::: warning 💡 llm-cli-bridge is tested extensively with claude code
 :::
 Claude Code offers the smoothest experience.
 
 ```bash
 # install for claude code
-claude mcp add gemini-cli -- npx -y gemini-mcp-tool
+claude mcp add gemini-cli -- npx -y @maxanatsko/llm-cli-bridge
 
 # Start Claude Code - it's automatically configured!
 claude
@@ -72,7 +72,7 @@ For Claude Desktop users, add this to your configuration file:
   "mcpServers": {
     "gemini-cli": {
       "command": "npx",
-      "args": ["-y", "gemini-mcp-tool"]
+      "args": ["-y", "@maxanatsko/llm-cli-bridge"]
     }
   }
 }
@@ -91,7 +91,7 @@ Gemini MCP Tool works with 40+ MCP clients! Here are the common configuration pa
   "transport": {
     "type": "stdio",
     "command": "npx",
-    "args": ["-y", "gemini-mcp-tool"]
+    "args": ["-y", "@maxanatsko/llm-cli-bridge"]
   }
 }
 ```
@@ -109,7 +109,7 @@ Gemini MCP Tool works with 40+ MCP clients! Here are the common configuration pa
     "command": "npx",
     "args": [
       "-y",
-      "gemini-mcp-tool"
+      "@maxanatsko/llm-cli-bridge"
     ],
     "env": {},
     "working_directory": null,
@@ -202,5 +202,5 @@ Now that you're set up:
 - Join the community for support
 
 ::: info Need Help?
-If you run into issues, [open an issue](https://github.com/jamubc/gemini-mcp-tool/issues) on GitHub.
+If you run into issues, [open an issue](https://github.com/maxanatsko/llm-cli-bridge/issues) on GitHub.
 :::

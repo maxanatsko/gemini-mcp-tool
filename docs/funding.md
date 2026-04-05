@@ -2,9 +2,9 @@
 layout: funding
 ---
 
-# Support the Development of Gemini MCP Tool
+# Support the Development of LLM CLI Bridge
 
-`Gemini MCP Tool is a need-driven project dedicated to being an open-source, free tool for developers working with Google's Gemini models. We are committed to keeping it free and open-source, forever. As the project's complexity grows, so does the costs and time required to sustain it. Your contribution, no matter the size, helps ensure the project's long-term health and allows us to build the features our community needs.`
+`LLM CLI Bridge is a need-driven project dedicated to being an open-source, free tool for developers working with LLM CLI tools. We are committed to keeping it free and open-source, forever. As the project's complexity grows, so does the costs and time required to sustain it. Your contribution, no matter the size, helps ensure the project's long-term health and allows us to build the features our community needs.`
 
 ## How Your Support is Used
 
@@ -20,7 +20,7 @@ layout: funding
   
   <ul>
     <li><strong>Docs & Listing:</strong> Updating and maintaining the documentation website & outreach</li>
-    <li><strong>API Testing Credits:</strong> Funds are used for testing various deployements of gemini-mcp-tool on popular clients.</li>
+    <li><strong>API Testing Credits:</strong> Funds are used for testing various deployements of llm-cli-bridge on popular clients.</li>
   </ul>
   
   <div class="progress-bar">

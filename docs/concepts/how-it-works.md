@@ -2,7 +2,7 @@
 
 ## Natural Language Workflow Integration
 
-The gemini-mcp-tool is designed to seamlessly integrate into your natural workflow with your preferred MCP compliant AI clients, achieved through carefully crafted tools and pipelines.
+The llm-cli-bridge is designed to seamlessly integrate into your natural workflow with your preferred MCP compliant AI clients, achieved through carefully crafted tools and pipelines.
 
 Claude automatically decides when to use `ask` (alias: `ask-gemini`) based on context:
 

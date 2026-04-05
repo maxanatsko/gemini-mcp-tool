@@ -38,14 +38,14 @@ If you still get "command not found", restart your terminal or add npm global bi
 
 ```bash
 # Method 1: Install globally first
-npm install -g @maxanatsko/ai-cli-mcp-server
-claude mcp add gemini-cli -- @maxanatsko/ai-cli-mcp-server
+npm install -g @maxanatsko/llm-cli-bridge
+claude mcp add gemini-cli -- @maxanatsko/llm-cli-bridge
 
 # Method 2: Use --yes instead of -y
-claude mcp add gemini-cli -- npx --yes @maxanatsko/ai-cli-mcp-server
+claude mcp add gemini-cli -- npx --yes @maxanatsko/llm-cli-bridge
 
 # Method 3: Remove the -y flag entirely
-claude mcp add gemini-cli -- npx @maxanatsko/ai-cli-mcp-server
+claude mcp add gemini-cli -- npx @maxanatsko/llm-cli-bridge
 ```
 
 </TroubleshootingModal>
@@ -162,8 +162,8 @@ node --version
 gemini "Hello"
 
 # 3. Reinstall if needed
-npm uninstall -g @maxanatsko/ai-cli-mcp-server
-npm install -g @maxanatsko/ai-cli-mcp-server
+npm uninstall -g @maxanatsko/llm-cli-bridge
+npm install -g @maxanatsko/llm-cli-bridge
 
 # 4. Verify Claude Code can find the command
 claude mcp list
@@ -287,7 +287,7 @@ Enable debug logging:
 
 ## Getting Help
 
-1. Check [GitHub Issues](https://github.com/maxanatsko/ai-cli-mcp-server/issues)
+1. Check [GitHub Issues](https://github.com/maxanatsko/llm-cli-bridge/issues)
 2. Enable debug mode
 3. Collect error logs
 4. Open a new issue with details
@@ -318,8 +318,8 @@ Enable debug logging:
 ### Reset Everything
 ```bash
 # Remove and reinstall
-npm uninstall -g @maxanatsko/ai-cli-mcp-server
-npm install -g @maxanatsko/ai-cli-mcp-server
+npm uninstall -g @maxanatsko/llm-cli-bridge
+npm install -g @maxanatsko/llm-cli-bridge
 
 # Reset Gemini CLI
 gemini config reset

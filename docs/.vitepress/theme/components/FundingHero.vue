@@ -35,7 +35,7 @@
         </a>
 
         <a 
-          href="https://github.com/jamubc/gemini-mcp-tool" 
+          href="https://github.com/maxanatsko/llm-cli-bridge"
           target="_blank"
           rel="noopener"
           class="action-button action-primary"

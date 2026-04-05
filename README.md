@@ -1,4 +1,4 @@
-# AI CLI MCP Server
+# LLM CLI Bridge
 
 <br>
 
@@ -17,7 +17,7 @@
 
 <br>
 
-**Version** `3.0.0`
+**Version** `3.1.0`
 **License** `MIT`
 
 ---
@@ -44,7 +44,7 @@ Google Gemini CLI (configured)
 ### Recommended
 
 ```bash
-claude mcp add ai-cli -- npx -y @maxanatsko/ai-cli-mcp-server
+claude mcp add llm-cli -- npx -y @maxanatsko/llm-cli-bridge
 ```
 
 <br>
@@ -52,14 +52,14 @@ claude mcp add ai-cli -- npx -y @maxanatsko/ai-cli-mcp-server
 ### Local Development
 
 ```bash
-git clone https://github.com/maxanatsko/ai-cli-mcp-server.git
-cd ai-cli-mcp-server
+git clone https://github.com/maxanatsko/llm-cli-bridge.git
+cd llm-cli-bridge
 
 npm install
 npm run build
 npm link
 
-claude mcp add ai-cli -- ai-cli-mcp
+claude mcp add llm-cli -- llm-cli-bridge
 ```
 
 <br>
@@ -85,9 +85,9 @@ claude mcp add ai-cli -- ai-cli-mcp
 ```json
 {
   "mcpServers": {
-    "ai-cli": {
+    "llm-cli": {
       "command": "npx",
-      "args": ["-y", "@maxanatsko/ai-cli-mcp-server"]
+      "args": ["-y", "@maxanatsko/llm-cli-bridge"]
     }
   }
 }
@@ -190,9 +190,9 @@ changeMode  Optional    Structured edit suggestions
 
 <br>
 
-[Documentation](https://maxanatsko.github.io/ai-cli-mcp-server/)
+[Documentation](https://maxanatsko.github.io/llm-cli-bridge/)
 [Original Project](https://github.com/jamubc/gemini-mcp-tool)
-[This Fork](https://github.com/maxanatsko/ai-cli-mcp-server)
+[GitHub](https://github.com/maxanatsko/llm-cli-bridge)
 
 <br>
 

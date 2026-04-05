@@ -2,8 +2,8 @@
 layout: home
 
 hero:
-  name: "Gemini MCP Tool"
-  text: "Connect the Gemini CLI to the MCP Ecosystem"
+  name: "LLM CLI Bridge"
+  text: "Connect LLM CLIs to the MCP Ecosystem"
   tagline: "Leverage Google's Gemini models in any client that supports the standardized MCP protocol—<span style='color: #FFFFFF; background-color: #D97706; padding: 2px 8px; border-radius: 6px; font-size: 14px; font-weight: 600; margin-left: 4px; display: inline-block; vertical-align: middle;'>built for Claude Code</span>"
   actions:
     - theme: brand
@@ -11,7 +11,7 @@ hero:
       link: /getting-started
     - theme: alt
       text: Leave a Star ⭐
-      link: https://github.com/jamubc/gemini-mcp-tool
+      link: https://github.com/maxanatsko/llm-cli-bridge
 
 features:
   - icon: 📂
@@ -31,7 +31,7 @@ features:
       <span style="color: #3b82f6;">Built on MCP protocol.</span><br><span style="color: #ef4444;">Tested with MCP standard.</span><br><span style="color: #22c55e;"><em>Benchmarked</em> with <span style="color: #f97316;">Claude Code</span>.</span>
   - icon: 🔐
     title: No keys!
-    details: Gemini-mcp-tool does not require any extra keys.
+    details: llm-cli-bridge does not require any extra keys.
   - icon: 🚦
     title: Model Selection
     details: Choose from Gemini-2.5-Pro and Gemini-2.5-Flash, using natural language.
@@ -53,6 +53,6 @@ features:
 ## Quick Start
 </div>
 
-For installation and setup instructions, please refer to our [GitHub repository](https://github.com/jamubc/gemini-mcp-tool#readme) which contains the most up-to-date installation guide.
+For installation and setup instructions, please refer to our [GitHub repository](https://github.com/maxanatsko/llm-cli-bridge#readme) which contains the most up-to-date installation guide.
 
 
