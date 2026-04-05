@@ -30,7 +30,7 @@ import {
 const server = new Server(
   {
     name: "llm-cli-bridge",
-    version: "3.1.0",
+    version: "3.1.1",
   },{
     capabilities: {
       tools: {},

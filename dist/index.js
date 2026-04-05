@@ -7,7 +7,7 @@ import { PROTOCOL } from "./constants.js";
 import { getToolDefinitions, getPromptDefinitions, executeTool, toolExists, getPromptMessage } from "./tools/index.js";
 const server = new Server({
     name: "llm-cli-bridge",
-    version: "3.1.0",
+    version: "3.1.1",
 }, {
     capabilities: {
         tools: {},

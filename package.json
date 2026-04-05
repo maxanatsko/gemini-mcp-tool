@@ -1,6 +1,6 @@
 {
   "name": "@maxanatsko/llm-cli-bridge",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "MCP server bridging LLM CLI tools (Gemini CLI, Codex CLI) into the MCP ecosystem",
   "type": "module",
   "main": "dist/index.js",
