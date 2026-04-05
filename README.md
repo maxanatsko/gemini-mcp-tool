@@ -17,7 +17,7 @@
 
 <br>
 
-**Version** `3.1.0`
+**Version** `3.1.1`
 **License** `MIT`
 
 ---
@@ -163,31 +163,69 @@ use codex in workspace-write mode to refactor @src/
 
 | Tool | Description |
 |:-----|:------------|
-| `ask` | Query Gemini or Codex with `@` file references |
-| `ask-gemini` | Backward-compatible alias for `ask` |
-| `brainstorm` | Creative ideation with frameworks |
-| `review-code` | Interactive code review sessions |
-| `ping` | Connection test |
-| `help` | CLI documentation |
+| `ask` | Query Gemini or Codex with `@` file references, sessions, and change mode |
+| `brainstorm` | Creative ideation with structured frameworks and iterative sessions |
+| `review-code` | Multi-round interactive code review with comment tracking |
 
 <br>
 
-### Parameters
-
-<br>
-
-**ask** (or `ask-gemini`)
+### `ask` parameters
 
 ```
-prompt      Required    Analysis request with @ syntax
-backend     Optional    gemini (default) | codex
-model       Optional    Backend-specific override
-reasoningEffort Optional Codex-only: low|medium|high|xhigh
-sandbox     Optional    Gemini sandbox / Codex workspace-write
-sandboxMode Optional    Codex-only: read-only|workspace-write|danger-full-access
-session     Optional    Conversation continuity
-includeHistory Optional Include previous rounds
-changeMode  Optional    Structured edit suggestions
+prompt           Required    Analysis request; use @ syntax for files (@src/main.js)
+backend          Optional    gemini (default) | codex
+model            Optional    Gemini: gemini-3.1-pro (default), gemini-3-flash, gemini-2.5-pro, gemini-2.5-flash
+                             Codex: gpt-5.4 (default), gpt-5.4-mini, gpt-5.3-codex, gpt-5.2-codex, gpt-5.2
+reasoningEffort  Optional    Codex only: low | medium (default) | high | xhigh
+sandbox          Optional    Gemini sandbox / Codex workspace-write (bool, default false)
+sandboxMode      Optional    Codex only: read-only | workspace-write | danger-full-access
+session          Optional    Session ID for conversation continuity (e.g. 'my-debug-session')
+includeHistory   Optional    Include conversation history when session is active (default true)
+changeMode       Optional    Return structured edit suggestions Claude can apply directly (bool)
+allowedTools     Optional    Tools the backend can auto-approve (e.g. ['run_shell_command'])
+cwd              Optional    Working directory for CLI execution
+```
+
+<br>
+
+### `brainstorm` parameters
+
+```
+prompt           Required    Brainstorming challenge or question
+backend          Optional    gemini (default) | codex
+model            Optional    Same options as ask
+methodology      Optional    auto (default) | divergent | convergent | scamper | design-thinking | lateral
+domain           Optional    Domain context (e.g. 'software', 'product', 'marketing')
+constraints      Optional    Known limitations or requirements
+existingContext  Optional    Background context to build on
+ideaCount        Optional    Number of ideas to generate (default 12)
+includeAnalysis  Optional    Include feasibility/impact scoring (default true)
+session          Optional    Session ID for iterative brainstorming rounds
+includeHistory   Optional    Include previous round ideas in context (default true)
+reasoningEffort  Optional    Codex only: low | medium | high | xhigh
+allowedTools     Optional    Tools the backend can auto-approve
+cwd              Optional    Working directory for CLI execution
+```
+
+<br>
+
+### `review-code` parameters
+
+```
+prompt           Required    Review request or follow-up question
+backend          Optional    gemini (default) | codex
+model            Optional    Same options as ask
+files            Optional    Specific files to review (uses @ syntax internally)
+sessionId        Optional    Explicit session ID (auto-detected from git state if omitted)
+forceNewSession  Optional    Force a fresh session ignoring existing git state (bool)
+reviewType       Optional    general (default) | security | performance | quality | architecture
+severity         Optional    all (default) | critical-only | important-and-above
+commentDecisions Optional    Array of decisions on previous round's comments
+                             { commentId, decision: accept|reject|modify|defer, notes? }
+includeHistory   Optional    Include review history in context (default true)
+reasoningEffort  Optional    Codex only: low | medium | high | xhigh
+allowedTools     Optional    Tools the backend can auto-approve
+cwd              Optional    Working directory for CLI execution
 ```
 
 <br>
@@ -200,7 +238,6 @@ changeMode  Optional    Structured edit suggestions
 
 <br>
 
-[Documentation](https://maxanatsko.github.io/llm-cli-bridge/)
 [Original Project](https://github.com/jamubc/gemini-mcp-tool)
 [GitHub](https://github.com/maxanatsko/llm-cli-bridge)
 
